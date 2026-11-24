@@ -36,3 +36,13 @@ For local development only, plain HTTP can be explicitly enabled with ALPHAAI_AL
 ## Current limitations
 
 This is a heartbeat/inventory agent only. The worker is not yet eligible for inference or training workloads. Workload execution must wait for signed job envelopes, mutual authentication, isolation, resource limits, artifact verification, cancellation, telemetry, and a security review.
+
+## Automated tests
+
+Run the agent's isolated unit tests without a running AlphaAI server:
+
+```bash
+python -m unittest -v
+```
+
+The tests mock the NVIDIA utility and HTTP endpoint; they do not send network requests or require a GPU.
