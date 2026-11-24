@@ -19,3 +19,10 @@ def test_root_endpoint() -> None:
     assert response.status_code == 200
     assert "The Intelligence Universe" in response.text
     assert "Not a live inference service" in response.text
+
+
+def test_model_explorer_page_is_served() -> None:
+    response = client.get("/models")
+    assert response.status_code == 200
+    assert "Find the right model." in response.text
+    assert "/v1/models" in response.text
