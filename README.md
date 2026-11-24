@@ -46,9 +46,16 @@ A catalog entry is not a promise that a model is downloadable, free, licensed fo
 - Runnable: runtime, weights, license and hardware are compatible.
 - Trainable: the license and format permit the intended fine-tuning workflow.
 
-## Current status
+## Implemented foundation
 
-This repository is establishing architecture and development controls. The starter API is not a public inference service. Public access remains blocked until security and resource controls are implemented and tested.
+- FastAPI control-plane skeleton and health endpoint.
+- PostgreSQL/SQLite-compatible SQLAlchemy model registry schema.
+- Alembic migration for the initial registry table.
+- Read-only public registry endpoints with search, provider/task filters, pagination and slash-containing model IDs.
+- Public visibility requires an available record, verified/not-applicable license status, and known access method.
+- CI runs database migrations, automated tests and Docker image build.
+
+The registry intentionally starts empty. We will not publish invented model availability or mark a model license as verified without evidence. Catalog ingestion is the next implementation step.
 
 ## Local development
 
@@ -58,6 +65,7 @@ Requirements: Docker Engine or Docker Desktop with Compose.
 2. Replace local placeholder passwords and secrets.
 3. Run docker compose up --build.
 4. Open http://localhost:8000/health.
+5. Explore http://localhost:8000/docs.
 
 Never commit real credentials, private datasets, user data, or model weights.
 
