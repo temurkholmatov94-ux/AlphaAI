@@ -66,7 +66,8 @@ Requirements: Docker Engine or Docker Desktop with Compose.
 3. Run docker compose up --build.
 4. Open http://localhost:8000/health.
 5. Explore http://localhost:8000/docs.
+6. To discover public Hub models into the internal review queue, run `docker compose exec api python -m scripts.discover_huggingface --limit 50 --pipeline-tag text-generation`.
 
-Never commit real credentials, private datasets, user data, or model weights.
+New discoveries remain unapproved and hidden from public listings until a human verifies license and runtime access. Never commit real credentials, private datasets, user data, or model weights.
 
 See docs/MASTER_ARCHITECTURE.md, docs/THREAT_MODEL.md, and docs/ROADMAP.md.
