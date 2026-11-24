@@ -127,6 +127,7 @@ def list_review_queue(
                 "availability_status": item.availability_status,
                 "tasks": item.tasks,
                 "weights_available": item.weights_available,
+                "weights_status": item.weights_status,
                 "gated": item.gated,
                 "upstream_revision": item.upstream_revision,
                 "upstream_last_modified": item.upstream_last_modified,
