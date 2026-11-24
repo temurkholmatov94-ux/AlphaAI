@@ -46,6 +46,17 @@ class ProviderGateway:
     def available_models(self) -> list[str]:
         return sorted(self._routes)
 
+    @property
+    def route_descriptors(self) -> list[dict[str, str]]:
+        return [
+            {
+                "public_model_id": route.public_model_id,
+                "provider": route.provider_name,
+                "upstream_model_id": route.upstream_model_id,
+            }
+            for route in sorted(self._routes.values(), key=lambda item: item.public_model_id)
+        ]
+
     async def chat(
         self,
         *,
