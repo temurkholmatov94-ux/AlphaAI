@@ -2,15 +2,16 @@
 
 ## Gate A — Foundation
 - [x] Founder direction: public, performance-first, all three strategic priorities
-- [x] Master architecture
-- [x] Initial control-plane service skeleton
+- [x] Master architecture and threat model
+- [x] FastAPI control-plane service skeleton
 - [x] Local PostgreSQL and Redis development services
-- [x] Threat model and public-beta safety gate
-- [ ] CI workflow and dependency/security checks
-- [ ] Run tests in CI and verify Docker build
+- [x] SQLAlchemy model registry schema and initial Alembic migration
+- [x] Read-only registry list/detail endpoints and filtering
+- [x] CI migration, automated test and Docker build steps
+- [ ] Dependency/security scanning and release workflow
 
 ## Gate B — Secure control plane
-- [ ] Database migrations and typed persistence models
+- [ ] Database migrations and typed persistence models — registry migration exists; identity/tenant migrations remain
 - [ ] Authentication and verified account flow
 - [ ] Organization, project and role model
 - [ ] API key issuance, hashing, scopes, rotation and revocation
@@ -18,11 +19,12 @@
 - [ ] Atomic quota/spend reservation and global kill switch
 
 ## Gate C — Model Universe
-- [ ] Model registry schema and APIs
+- [x] Initial model registry and public read-only API
 - [ ] Hub/provider discovery connectors
-- [ ] Provenance and license review states
+- [ ] Provenance and license review workflow
 - [ ] Search, filtering, aliases and model capability metadata
 - [ ] Connector health and last-verified timestamps
+- [ ] Admin-only model ingestion and review interface
 
 ## Gate D — Inference and intelligence
 - [ ] Provider adapter contract and contract tests
