@@ -100,6 +100,7 @@ class ModelRecord(Base):
     modalities: Mapped[list] = mapped_column(JSON, default=list)
     context_window: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weights_available: Mapped[bool] = mapped_column(Boolean, default=False)
+    weights_status: Mapped[str] = mapped_column(String(24), default="unknown", nullable=False)
     downloads: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     likes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
