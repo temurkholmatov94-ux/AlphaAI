@@ -45,7 +45,7 @@
 - [ ] Connector health and last-verified timestamps
 - [x] First same-origin admin control center for model review queue and approvals
 - [x] Admin-only provider configuration inventory endpoint
-- [ ] Admin-only model ingestion and review interface
+- [x] Admin-only model ingestion and review interface (bounded Hugging Face discovery, audit logged)
 - [ ] Additional verified model source connectors
 
 ## Gate D — Inference and intelligence
