@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from app.database import get_db
-from app.discovery.huggingface import map_huggingface_model
+from app.discovery.huggingface import HuggingFaceDiscovery, map_huggingface_model
 from app.main import app
 from app.models import ModelRecord
 
@@ -50,3 +50,53 @@ def test_discovery_records_are_not_public(client):
         db_generator.close()
 
     assert client.get("/v1/models/example-org/not-yet-reviewed").status_code == 404
+
+
+def test_discovery_upsert_preserves_human_review_decisions(client):
+    info = SimpleNamespace(
+        id="example-org/approved-model",
+        card_data=SimpleNamespace(license="apache-2.0"),
+        pipeline_tag="text-generation",
+        last_modified=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        gated=False,
+        downloads=99,
+        likes=8,
+        library_name="transformers",
+        sha="newrevision",
+    )
+
+    class FakeAPI:
+        def list_models(self, **kwargs):
+            assert kwargs["limit"] == 10
+            assert kwargs["search"] == "approved"
+            return [info]
+
+    db_generator = app.dependency_overrides[get_db]()
+    db = next(db_generator)
+    try:
+        db.add(ModelRecord(
+            model_id="example-org/approved-model",
+            display_name="Approved Model",
+            provider="Hugging Face",
+            license_status="verified",
+            access_method="hosted_api",
+            availability_status="available",
+            tasks=["text-generation"],
+            modalities=["text"],
+        ))
+        db.commit()
+
+        result = HuggingFaceDiscovery(api=FakeAPI()).ingest(
+            db, limit=10, search="approved"
+        )
+        record = db.query(ModelRecord).filter_by(
+            model_id="example-org/approved-model"
+        ).one()
+        assert result == {"fetched": 1, "created": 0, "updated": 1}
+        assert record.license_status == "verified"
+        assert record.availability_status == "available"
+        assert record.access_method == "hosted_api"
+        assert record.upstream_revision == "newrevision"
+    finally:
+        db.close()
+        db_generator.close()
