@@ -1,0 +1,160 @@
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.config import get_settings
+from app.database import get_db
+from app.dependencies import get_current_user
+from app.models import AuditEvent, EmailVerification, Organization, OrganizationMembership, User
+from app.schemas import (
+    EmailVerificationRequest,
+    LoginRequest,
+    RegisterRequest,
+    RegisterResponse,
+    TokenResponse,
+    UserRead,
+)
+from app.security import (
+    create_access_token,
+    digest_secret,
+    generate_verification_token,
+    hash_password,
+    verify_password,
+)
+
+router = APIRouter(prefix="/v1/auth", tags=["identity"])
+
+
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> RegisterResponse:
+    email = str(payload.email).strip().lower()
+    if db.scalar(select(User.id).where(User.email == email)) is not None:
+        raise HTTPException(status_code=409, detail="An account with this email already exists")
+
+    user = User(email=email, password_hash=hash_password(payload.password))
+    db.add(user)
+    db.flush()
+
+    organization = Organization(
+        name=f"{email.split('@', 1)[0]}'s workspace",
+        slug=f"workspace-{uuid4().hex[:12]}",
+        created_by_user_id=user.id,
+    )
+    db.add(organization)
+    db.flush()
+    db.add(OrganizationMembership(user_id=user.id, organization_id=organization.id, role="owner"))
+
+    raw_token = generate_verification_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    db.add(
+        EmailVerification(
+            user_id=user.id,
+            token_hash=digest_secret(raw_token),
+            expires_at=expires_at,
+        )
+    )
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="identity.registered",
+            resource_type="user",
+            resource_id=str(user.id),
+            details={"organization_id": organization.id},
+        )
+    )
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="An account with this email already exists")
+
+    # A verification token is returned only in local development. Production must
+    # deliver it through a configured email provider and must never expose it in API responses.
+    development_token = raw_token if get_settings().app_env == "development" else None
+    return RegisterResponse(
+        user_id=user.id,
+        email=user.email,
+        status="pending_email_verification",
+        verification_required=True,
+        development_verification_token=development_token,
+    )
+
+
+@router.post("/verify-email", response_model=UserRead)
+def verify_email(payload: EmailVerificationRequest, db: Session = Depends(get_db)) -> UserRead:
+    try:
+        token_hash = digest_secret(payload.token)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Email verification is not configured")
+
+    verification = db.scalar(
+        select(EmailVerification).where(EmailVerification.token_hash == token_hash)
+    )
+    now = datetime.now(timezone.utc)
+    if verification is None or verification.used_at is not None:
+        raise HTTPException(status_code=400, detail="Verification token is invalid or already used")
+
+    expires_at = verification.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= now:
+        raise HTTPException(status_code=400, detail="Verification token has expired")
+
+    user = db.get(User, verification.user_id)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=400, detail="Account cannot be verified")
+
+    verification.used_at = now
+    user.email_verified = True
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="identity.email_verified",
+            resource_type="user",
+            resource_id=str(user.id),
+            details={},
+        )
+    )
+    db.commit()
+    db.refresh(user)
+    return UserRead.model_validate(user)
+
+
+@router.post("/login", response_model=TokenResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    email = str(payload.email).strip().lower()
+    user = db.scalar(select(User).where(User.email == email))
+    if not verify_password(payload.password, user.password_hash if user else None):
+        raise HTTPException(status_code=401, detail="Email or password is incorrect")
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="Email or password is incorrect")
+    if not user.email_verified:
+        raise HTTPException(status_code=403, detail="Email verification is required")
+
+    token, expires_at = create_access_token(user.id)
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="identity.login",
+            resource_type="user",
+            resource_id=str(user.id),
+            details={},
+        )
+    )
+    db.commit()
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        expires_at=expires_at,
+        user=UserRead.model_validate(user),
+    )
+
+
+@router.get("/me", response_model=UserRead)
+def me(user: User = Depends(get_current_user)) -> UserRead:
+    return UserRead.model_validate(user)
