@@ -1,0 +1,52 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
+from app.database import get_db
+from app.discovery.huggingface import map_huggingface_model
+from app.main import app
+from app.models import ModelRecord
+
+
+def test_huggingface_mapping_never_approves_model_automatically():
+    info = SimpleNamespace(
+        id="example-org/example-model",
+        card_data=SimpleNamespace(license="apache-2.0"),
+        pipeline_tag="text-generation",
+        last_modified=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        gated=False,
+        downloads=1200,
+        likes=42,
+        library_name="transformers",
+        sha="abc123",
+    )
+    mapped = map_huggingface_model(info)
+    assert mapped["model_id"] == "example-org/example-model"
+    assert mapped["license_id"] == "apache-2.0"
+    assert mapped["license_status"] == "unknown"
+    assert mapped["availability_status"] == "review-required"
+    assert mapped["weights_available"] is False
+
+
+def test_discovery_records_are_not_public(client):
+    info = SimpleNamespace(
+        id="example-org/not-yet-reviewed",
+        card_data=SimpleNamespace(license="mit"),
+        pipeline_tag="text-generation",
+        last_modified=None,
+        gated=False,
+        downloads=5,
+        likes=1,
+        library_name="transformers",
+        sha="rev123",
+    )
+    mapped = map_huggingface_model(info)
+    db_generator = app.dependency_overrides[get_db]()
+    db = next(db_generator)
+    try:
+        db.add(ModelRecord(**mapped))
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    assert client.get("/v1/models/example-org/not-yet-reviewed").status_code == 404
