@@ -30,6 +30,10 @@
 - [x] Hugging Face Hub discovery adapter and bounded CLI ingestion
 - [x] Discovery metadata and upstream revision/provenance fields
 - [x] New discoveries default to review-required and are not publicly listed
+- [x] Protected admin review queue and model approval endpoint
+- [x] Publication requires approved license status and known access method
+- [x] Audit trail for before/after model review decisions
+- [ ] Full organization roles, MFA-backed admin access and managed admin lifecycle
 - [ ] Provenance and license review workflow
 - [ ] Search, filtering, aliases and model capability metadata
 - [ ] Connector health and last-verified timestamps
