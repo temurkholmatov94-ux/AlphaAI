@@ -158,3 +158,10 @@ Store the one-time worker token in a dedicated secret store. Never paste it into
 An opt-in agent is available in `worker-agent/agent.py`. It reports bounded hardware inventory to the worker heartbeat endpoint, requires HTTPS by default, and stops when its credential is revoked. It does not execute remote jobs, download model weights, install drivers, open inbound ports, or accept remote commands. See `worker-agent/README.md` for setup and limitations.
 
 CI compiles the worker agent as part of the normal workflow. Do not connect a machine until the API is deployed behind HTTPS and you have explicit authorization to report that machine's hardware.
+
+## Worker benchmark ingestion (implemented; unverified)
+
+- A registered worker can submit the `alphaai-fp32-matmul-v1` result to `POST /v1/workers/benchmarks` using its worker bearer token.
+- The API validates bounded matrix size, repetitions, VRAM and latency fields. It derives the FP32 TFLOPS estimate on the server rather than trusting a client-provided score.
+- Administrators can inspect recent results through `GET /v1/admin/workers/benchmarks?limit=50`.
+- Every result is explicitly labelled `unverified`: a worker token authenticates the reporting worker, not the truth of its hardware or benchmark measurements. Do not use these results for public rankings, billing, or automatic workload placement until independent verification and anti-abuse controls exist.
