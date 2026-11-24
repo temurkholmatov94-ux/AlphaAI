@@ -128,6 +128,10 @@ def list_review_queue(
                 "tasks": item.tasks,
                 "weights_available": item.weights_available,
                 "weights_status": item.weights_status,
+                "publisher_namespace": item.publisher_namespace,
+                "canonical_name": item.canonical_name,
+                "variant_type": item.variant_type,
+                "identity_status": item.identity_status,
                 "gated": item.gated,
                 "upstream_revision": item.upstream_revision,
                 "upstream_last_modified": item.upstream_last_modified,
@@ -179,4 +183,40 @@ def review_model(
         "access_method": item.access_method,
         "availability_status": item.availability_status,
         "last_verified_at": item.last_verified_at,
+    }
+
+
+@router.get("/identity-candidates")
+def list_identity_candidates(
+    _admin: User = Depends(require_platform_admin),
+    db: Session = Depends(get_db),
+    limit: int = Query(default=100, ge=1, le=500),
+):
+    """List heuristic related-model groups without merging or verifying them."""
+    rows = db.scalars(
+        select(ModelRecord)
+        .where(ModelRecord.canonical_name.is_not(None))
+        .order_by(ModelRecord.canonical_name, ModelRecord.model_id)
+        .limit(limit)
+    ).all()
+    groups: dict[str, list[dict]] = {}
+    for item in rows:
+        key = (item.canonical_name or '').casefold()
+        groups.setdefault(key, []).append({
+            'model_id': item.model_id,
+            'publisher_namespace': item.publisher_namespace,
+            'canonical_name': item.canonical_name,
+            'variant_type': item.variant_type,
+            'identity_status': item.identity_status,
+            'license_id': item.license_id,
+            'weights_status': item.weights_status,
+        })
+    candidates = [
+        {'canonical_name': values[0]['canonical_name'], 'models': values}
+        for values in groups.values() if len(values) > 1
+    ]
+    return {
+        'items': candidates,
+        'total_groups': len(candidates),
+        'note': 'Similarity is heuristic only. No repositories are merged, verified, or published automatically.',
     }
