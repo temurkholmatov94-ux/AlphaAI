@@ -19,7 +19,7 @@ class AnthropicAdapter:
         *,
         api_key: str,
         base_url: str = "https://api.anthropic.com",
-        api_version: str = "2023-06-01",
+        api_version: str = "2026-10-21",
         timeout_seconds: float = 45.0,
         client: httpx.AsyncClient | None = None,
     ) -> None:
@@ -54,7 +54,7 @@ class AnthropicAdapter:
             payload["temperature"] = request.temperature
 
         headers = {
-            "x-api-key": self.api_key,
+            "Authorization": f"Bearer {self.api_key}",
             "anthropic-version": self.api_version,
             "content-type": "application/json",
         }
