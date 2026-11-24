@@ -44,6 +44,7 @@
 - [ ] Search, filtering, aliases and model capability metadata
 - [ ] Connector health and last-verified timestamps
 - [x] First same-origin admin control center for model review queue and approvals
+- [x] Admin-only provider configuration inventory endpoint
 - [ ] Admin-only model ingestion and review interface
 - [ ] Additional verified model source connectors
 
@@ -59,6 +60,7 @@
 - [ ] Per-user/org/key rate and concurrency limits
 - [ ] Global budget ceiling and emergency kill switch
 - [ ] Authenticated inference endpoint after budget controls pass
+- [x] Protected provider configuration inventory with credential redaction and explicit non-health status
 - [ ] Provider health checks, circuit breakers and safe fallback policy
 - [ ] Self-hosted inference adapter (vLLM)
 - [ ] Policy-aware task router and model selection
