@@ -22,7 +22,13 @@
 - [ ] Organization invitations, membership management and role administration
 - [ ] Organization/project isolation on every resource
 - [ ] API key rotation, last-used UI and service accounts
-- [x] Organization usage accounts and atomic spend reservations\n- [x] Idempotent reservation and immutable usage settlement ledger\n- [x] Versioned model pricing table with source provenance and freshness checks\n- [x] Conservative cost estimator with integer arithmetic and safety margin\n- [ ] Trusted tokenizer and provider-specific token estimation\n- [ ] Operator-only pricing/budget provisioning\n- [ ] Operator-only budget provisioning and global kill switch
+- [x] Organization usage accounts and atomic spend reservations
+- [x] Idempotent reservation and immutable usage settlement ledger
+- [x] Versioned model pricing table with source provenance and freshness checks
+- [x] Conservative cost estimator with integer arithmetic and safety margin
+- [ ] Trusted tokenizer and provider-specific token estimation
+- [ ] Operator-only pricing/budget provisioning
+- [ ] Operator-only budget provisioning and global kill switch
 - [ ] Production session revocation and security review
 
 ## Gate C — Model Universe
