@@ -129,3 +129,29 @@ def test_admin_console_page_is_served(client):
     assert "AlphaAI" in response.text
     assert "Administrator access" in response.text
     assert "/v1/admin/models/review-queue" in response.text
+
+
+def test_admin_provider_inventory_requires_admin(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ALPHAAI_ADMIN_EMAILS", '["admin@example.com"]')
+    get_settings.cache_clear()
+    response = client.get("/v1/admin/providers")
+    assert response.status_code in {401, 403}
+
+
+def test_admin_provider_inventory_never_exposes_credentials(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ALPHAAI_ADMIN_EMAILS", '["admin@example.com"]')
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-do-not-leak")
+    monkeypatch.setenv("ALPHAAI_MODEL_ROUTES", '["alpha-fast=openai:gpt-test"]')
+    get_settings.cache_clear()
+    _, headers = admin_client(client, monkeypatch)
+    response = client.get("/v1/admin/providers", headers=headers)
+    assert response.status_code == 200
+    body = response.text
+    assert "test-secret-do-not-leak" not in body
+    assert "alpha-fast" in body
+    assert "configured" in body
+    get_settings.cache_clear()
