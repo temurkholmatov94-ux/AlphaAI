@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import get_auth_context, get_current_user, require_scopes
+from app.dependencies import get_current_user, require_scopes
 from app.models import Organization, OrganizationMembership, User
 from app.schemas import OrganizationRead
 
@@ -12,7 +12,8 @@ router = APIRouter(prefix="/v1/organizations", tags=["organizations"])
 
 @router.get("", response_model=list[OrganizationRead])
 def list_organizations(
-    context = Depends(require_scopes("orgs:read")),\n    user: User = Depends(get_current_user),
+    _context=Depends(require_scopes("orgs:read")),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[OrganizationRead]:
     statement = (
