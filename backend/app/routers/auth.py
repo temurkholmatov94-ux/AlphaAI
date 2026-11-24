@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -30,7 +31,7 @@ from app.security import (
 router = APIRouter(prefix="/v1/auth", tags=["identity"])
 
 class AdminBootstrapRequest(RegisterRequest):
-    bootstrap_token: str = __import__("pydantic").Field(min_length=32, max_length=256)
+    bootstrap_token: str = Field(min_length=32, max_length=256)
 
 
 @router.post("/bootstrap-admin", status_code=status.HTTP_201_CREATED)
