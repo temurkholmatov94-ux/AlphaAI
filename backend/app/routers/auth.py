@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -73,9 +72,10 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> Registe
         db.rollback()
         raise HTTPException(status_code=409, detail="An account with this email already exists")
 
-    # A verification token is returned only in local development. Production must
-    # deliver it through a configured email provider and must never expose it in API responses.
-    development_token = raw_token if get_settings().app_env == "development" else None
+    # Email delivery is not configured yet. This token is only exposed in explicit
+    # local development/test environments and is never returned in production.
+    environment = get_settings().app_env
+    development_token = raw_token if environment in {"development", "test"} else None
     return RegisterResponse(
         user_id=user.id,
         email=user.email,
