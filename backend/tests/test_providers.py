@@ -55,7 +55,7 @@ async def test_anthropic_adapter_maps_system_message_and_usage():
     seen = {}
 
     def handler(request):
-        seen["version"] = request.headers.get("anthropic-version")
+        seen["version"] = request.headers.get("anthropic-version")\n        seen["authorization"] = request.headers.get("authorization")
         seen["body"] = json.loads(request.content)
         return httpx.Response(
             200,
@@ -87,7 +87,7 @@ async def test_anthropic_adapter_maps_system_message_and_usage():
     assert result.output_text == "Safe answer"
     assert result.input_tokens == 9
     assert result.output_tokens == 3
-    assert seen["version"] == "2023-06-01"
+    assert seen["version"] == "2026-10-21"\n    assert seen["authorization"] == "Bearer test-secret"
     assert seen["body"]["system"] == "Be precise"
     assert seen["body"]["messages"][0]["role"] == "user"
 
