@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     alphaai_secret_key: str = ""
     access_token_minutes: int = 30
 
+    openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    anthropic_api_key: str | None = None
+    anthropic_base_url: str = "https://api.anthropic.com"
+    xai_api_key: str | None = None
+    xai_base_url: str = "https://api.x.ai/v1"
+    alphaai_model_routes: list[str] = []
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
