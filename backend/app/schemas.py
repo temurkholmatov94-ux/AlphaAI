@@ -50,7 +50,7 @@ class OrganizationRead(BaseModel):
     created_at: datetime
 
 
-ALLOWED_API_SCOPES = {"models:read", "inference:run", "usage:read"}
+ALLOWED_API_SCOPES = {"models:read", "inference:run", "usage:read", "orgs:read"}
 
 
 class APIKeyCreate(BaseModel):
