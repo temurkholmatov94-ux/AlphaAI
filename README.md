@@ -72,6 +72,16 @@ Provider credentials belong only in local environment files or a production secr
 
 **Important safety boundary:** these adapters are an internal foundation, not a public inference endpoint. Public inference remains disabled until persistent usage accounting, atomic quota/spend reservations, rate limits, output limits, a hard global budget ceiling and an emergency kill switch are implemented and tested.
 
+## Model Universe administration (implemented; bootstrap admin only)
+
+- Protected review queue for discovered, review-required and degraded model records.
+- Explicit server-side admin email allowlist; ordinary users cannot review or publish catalog entries.
+- Review action records the before/after decision in the audit log.
+- Publishing requires a verified or not-applicable license status and a known access method.
+- Discovery does not overwrite human review decisions.
+
+Set `ALPHAAI_ADMIN_EMAILS` to a JSON array of administrator email addresses in the server environment. This bootstrap allowlist is intentionally simple; production needs managed admin roles, MFA and audited admin lifecycle.
+
 ## Implemented foundation
 
 - FastAPI control-plane skeleton and health endpoint.
