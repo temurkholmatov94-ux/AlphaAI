@@ -193,3 +193,37 @@ def test_discovery_maps_identity_as_unreviewed_hint():
     assert mapped["publisher_namespace"] == "Qwen"
     assert mapped["variant_type"] == "quantized"
     assert mapped["identity_status"] == "unreviewed"
+
+
+
+def test_discovery_enriches_missing_siblings_from_model_info():
+    listed = SimpleNamespace(
+        id="Qwen/Qwen2.5-7B-Instruct",
+        card_data=SimpleNamespace(license="apache-2.0"),
+        gated=False,
+        siblings=None,
+    )
+    detailed = SimpleNamespace(
+        id="Qwen/Qwen2.5-7B-Instruct",
+        card_data=SimpleNamespace(license="apache-2.0"),
+        gated=False,
+        siblings=[
+            SimpleNamespace(rfilename="config.json"),
+            SimpleNamespace(rfilename="model-00001-of-00004.safetensors"),
+            SimpleNamespace(rfilename="model-00002-of-00004.safetensors"),
+        ],
+    )
+
+    class FakeAPI:
+        def list_models(self, **kwargs):
+            return [listed]
+
+        def model_info(self, *, repo_id, token):
+            assert repo_id == "Qwen/Qwen2.5-7B-Instruct"
+            assert token is False
+            return detailed
+
+    models = HuggingFaceDiscovery(api=FakeAPI()).fetch(limit=10)
+    mapped = map_huggingface_model(models[0])
+    assert mapped["weights_available"] is True
+    assert mapped["weights_status"] == "public"
