@@ -243,3 +243,80 @@ def test_worker_heartbeat_rejects_invalid_hardware_bounds(client, monkeypatch):
     )
     assert response.status_code == 422
     get_settings.cache_clear()
+
+
+def test_worker_benchmark_submission_derives_score_and_is_unverified(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ALPHAAI_ADMIN_EMAILS", '["admin@example.com"]')
+    get_settings.cache_clear()
+    _, headers = admin_client(client, monkeypatch)
+    created = client.post(
+        "/v1/admin/workers",
+        headers=headers,
+        json={"name": "Benchmark worker"},
+    )
+    assert created.status_code == 201
+    token = created.json()["worker_token"]
+
+    payload = {
+        "benchmark_name": "alphaai-fp32-matmul-v1",
+        "benchmark_version": "0.1.0",
+        "device_name": "Test NVIDIA GPU",
+        "device_vram_bytes": 24 * 1024**3,
+        "matrix_size": 1024,
+        "repetitions": 20,
+        "average_latency_ms": 10.0,
+        "torch_version": "2.x",
+        "cuda_version": "12.x",
+        "driver_version": "555.x",
+    }
+    submitted = client.post(
+        "/v1/workers/benchmarks",
+        headers={"Authorization": "Bearer " + token},
+        json=payload,
+    )
+    assert submitted.status_code == 201
+    result = submitted.json()
+    assert result["trust_status"] == "unverified"
+    assert result["estimated_fp32_tflops"] == 0.2147483648
+
+    _, admin_headers = admin_client(client, monkeypatch)
+    listed = client.get("/v1/admin/workers/benchmarks", headers=admin_headers)
+    assert listed.status_code == 200
+    assert listed.json()["total_returned"] == 1
+    assert listed.json()["items"][0]["device_name"] == "Test NVIDIA GPU"
+    assert listed.json()["items"][0]["trust_status"] == "unverified"
+    get_settings.cache_clear()
+
+
+def test_worker_benchmark_rejects_out_of_bounds_submission(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ALPHAAI_ADMIN_EMAILS", '["admin@example.com"]')
+    get_settings.cache_clear()
+    _, headers = admin_client(client, monkeypatch)
+    created = client.post(
+        "/v1/admin/workers",
+        headers=headers,
+        json={"name": "Benchmark bounds worker"},
+    )
+    token = created.json()["worker_token"]
+    payload = {
+        "benchmark_name": "alphaai-fp32-matmul-v1",
+        "benchmark_version": "0.1.0",
+        "device_name": "Test GPU",
+        "device_vram_bytes": 1024,
+        "matrix_size": 8192,
+        "repetitions": 20,
+        "average_latency_ms": 10.0,
+        "torch_version": "2.x",
+        "cuda_version": "12.x",
+    }
+    response = client.post(
+        "/v1/workers/benchmarks",
+        headers={"Authorization": "Bearer " + token},
+        json=payload,
+    )
+    assert response.status_code == 422
+    get_settings.cache_clear()
