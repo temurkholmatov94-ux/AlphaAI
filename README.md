@@ -23,6 +23,15 @@ Founder direction: public platform, performance-first compute, and simultaneous 
 6. Inference & Deployment: OpenAI-compatible gateway, versioned endpoints, API keys, observability, and traffic controls.
 7. Public Platform: identity, organizations, roles, quotas, usage metering, abuse prevention, and admin operations.
 
+## Website preview and deployment
+
+- Public landing page: `/`.
+- Interactive read-only model explorer: `/models`, backed by the approved public model registry API.
+- Initial administrator control center: `/admin`.
+- API documentation: `/docs`.
+- Preview-only Render Blueprint: `render.yaml`; deployment instructions and limitations: `docs/DEPLOYMENT.md`.
+- The repository does not yet have a live public deployment. The free preview Blueprint uses ephemeral SQLite and is not suitable for persistent user data or production. Public inference and production onboarding remain gated.
+
 ## Technology direction
 
 - Web: Next.js and TypeScript.
