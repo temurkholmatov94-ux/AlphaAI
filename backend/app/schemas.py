@@ -9,6 +9,7 @@ class ModelRead(BaseModel):
     model_id: str
     display_name: str
     provider: str
+    publisher: str | None
     source_url: str | None
     description: str | None
     license_id: str | None
@@ -19,6 +20,12 @@ class ModelRead(BaseModel):
     modalities: list[str]
     context_window: int | None
     weights_available: bool
+    downloads: int | None
+    likes: int | None
+    gated: bool | None
+    library_name: str | None
+    upstream_revision: str | None
+    upstream_last_modified: datetime | None
     last_verified_at: datetime | None
 
 
