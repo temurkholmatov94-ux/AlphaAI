@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.admin import require_platform_admin
@@ -51,7 +51,7 @@ def list_review_queue(
     if q:
         pattern = f"%{q.strip()}%"
         statement = statement.where(ModelRecord.model_id.ilike(pattern) | ModelRecord.display_name.ilike(pattern))
-    total = len(db.scalars(statement).all())
+    count_statement = select(func.count()).select_from(ModelRecord).where(\n        ModelRecord.availability_status.in_(("discovered", "review-required", "degraded"))\n    )\n    if q:\n        pattern = f"%{q.strip()}%"\n        count_statement = count_statement.where(\n            ModelRecord.model_id.ilike(pattern) | ModelRecord.display_name.ilike(pattern)\n        )\n    total = db.scalar(count_statement) or 0
     items = db.scalars(
         statement.order_by(ModelRecord.updated_at.desc(), ModelRecord.id.desc())
         .limit(limit).offset(offset)
