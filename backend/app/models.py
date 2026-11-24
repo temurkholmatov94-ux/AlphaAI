@@ -158,3 +158,23 @@ class UsageEvent(Base):
     cost_microusd: Mapped[int] = mapped_column(BigInteger, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ModelPricing(Base):
+    __tablename__ = "model_pricing"
+    __table_args__ = (
+        UniqueConstraint("provider", "model_id", "effective_from", name="uq_model_pricing_version"),
+        Index("ix_model_pricing_provider_model_active", "provider", "model_id", "active"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(String(100), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    input_microusd_per_million_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    output_microusd_per_million_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    source_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
