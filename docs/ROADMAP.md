@@ -82,6 +82,8 @@
 - [ ] Artifact registry, immutable versions and rollback
 
 ## Gate G — Distributed performance
+- [x] Opt-in local NVIDIA FP32 benchmark with explicit run flag and bounded workload
+- [ ] Signed benchmark result reporting and server-side validation
 - [ ] GPU inventory and scheduler
 - [ ] Multi-GPU serving and workload isolation
 - [ ] Queue-aware autoscaling
