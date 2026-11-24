@@ -11,6 +11,7 @@ from app.main import app
 
 @pytest.fixture()
 def client(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("ALPHAAI_SECRET_KEY", "test-only-secret-key-with-more-than-32-characters")
     get_settings.cache_clear()
     engine = create_engine(
