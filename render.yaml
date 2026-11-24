@@ -17,6 +17,6 @@ services:
       - key: APP_NAME
         value: AlphaAI
       - key: DATABASE_URL
-        value: sqlite:///./alphaai-preview.db
+        value: sqlite:////tmp/alphaai-preview.db
       - key: ALPHAAI_SECRET_KEY
         generateValue: true
