@@ -20,5 +20,3 @@ services:
         value: sqlite:///./alphaai-preview.db
       - key: ALPHAAI_SECRET_KEY
         generateValue: true
-      - key: ALPHAAI_ADMIN_EMAILS
-        sync: false
