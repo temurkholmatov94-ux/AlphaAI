@@ -152,3 +152,9 @@ Provider credentials remain in server environment variables or a secret manager.
 - This milestone does not yet execute workloads, install models, or expose workers to public inference. Scheduler, agent hardening, isolation, attestation and performance benchmarks remain release gates.
 
 Store the one-time worker token in a dedicated secret store. Never paste it into source code, public issue trackers or chat.
+
+## Worker agent (hardware reporting only)
+
+An opt-in agent is available in `worker-agent/agent.py`. It reports bounded hardware inventory to the worker heartbeat endpoint, requires HTTPS by default, and stops when its credential is revoked. It does not execute remote jobs, download model weights, install drivers, open inbound ports, or accept remote commands. See `worker-agent/README.md` for setup and limitations.
+
+CI compiles the worker agent as part of the normal workflow. Do not connect a machine until the API is deployed behind HTTPS and you have explicit authorization to report that machine's hardware.
