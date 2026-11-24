@@ -4,6 +4,8 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 
+from app.database import get_db
+
 from app.config import get_settings
 from app.routers.admin_models import router as admin_models_router
 from app.routers.admin_providers import router as admin_providers_router
