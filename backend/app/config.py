@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "AlphaAI"
     app_env: str = "development"
-    database_url: str = "postgresql://localhost/alphaai"
+    database_url: str = "sqlite:///./alphaai.db"
     redis_url: str = "redis://localhost:6379/0"
 
     model_config = SettingsConfigDict(
