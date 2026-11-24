@@ -46,7 +46,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> Registe
     )
     db.add(organization)
     db.flush()
-    db.add(OrganizationMembership(user_id=user.id, organization_id=organization.id, role="owner"))\n    # New workspaces start with inference spending disabled and a zero budget.\n    db.add(UsageAccount(organization_id=organization.id, budget_limit_microusd=0, enabled=False))
+    db.add(OrganizationMembership(user_id=user.id, organization_id=organization.id, role="owner"))
+    # New workspaces start with inference spending disabled and a zero budget.
+    db.add(UsageAccount(organization_id=organization.id, budget_limit_microusd=0, enabled=False))
 
     raw_token = generate_verification_token()
     expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
