@@ -66,7 +66,6 @@ class HuggingFaceDiscovery:
                 search=search,
                 pipeline_tag=pipeline_tag,
                 sort="downloads",
-                direction=-1,
                 limit=limit,
                 cardData=True,
                 token=False if not get_settings().huggingface_token else get_settings().huggingface_token,
