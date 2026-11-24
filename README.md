@@ -141,3 +141,14 @@ The page is served from the same origin as the API, so it does not require a sep
 - The admin console includes a provider configuration panel.
 
 Provider credentials remain in server environment variables or a secret manager. This inventory is not a credential editor and does not execute paid provider requests.
+
+## Compute worker registry (implemented; no jobs scheduled yet)
+
+- Platform administrators can provision workers through `POST /v1/admin/workers`. A worker credential is returned once and stored only as a keyed hash.
+- Workers authenticate to `POST /v1/workers/heartbeat` and report bounded hardware metadata: agent version, OS/architecture, CPU logical cores, RAM and GPU name/vendor/VRAM.
+- Administrators can inspect worker status through `GET /v1/admin/workers` and revoke credentials through `POST /v1/admin/workers/{worker_id}/revoke`.
+- Worker heartbeats update inventory but do not create a permanent audit event per heartbeat. Administrative create/revoke actions are audited.
+- A worker is considered online for 120 seconds after its latest heartbeat. This is a control-plane liveness indicator, not proof of GPU benchmark performance.
+- This milestone does not yet execute workloads, install models, or expose workers to public inference. Scheduler, agent hardening, isolation, attestation and performance benchmarks remain release gates.
+
+Store the one-time worker token in a dedicated secret store. Never paste it into source code, public issue trackers or chat.
