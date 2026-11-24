@@ -78,8 +78,8 @@ class APIKeyRead(BaseModel):
     key_prefix: str
     scopes: list[str]
     expires_at: datetime | None
-    revoked_at: datetime | None
-    last_used_at: datetime | None
+    revoked_at: datetime | None = None
+    last_used_at: datetime | None = None
     created_at: datetime
 
 
