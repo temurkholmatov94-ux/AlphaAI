@@ -46,6 +46,18 @@ A catalog entry is not a promise that a model is downloadable, free, licensed fo
 - Runnable: runtime, weights, license and hardware are compatible.
 - Trainable: the license and format permit the intended fine-tuning workflow.
 
+## Identity foundation (implemented; not yet public-launch ready)
+
+- Email/password registration with Argon2id password hashing.
+- Email verification records store only token digests; tokens expire after 24 hours and are single-use.
+- Short-lived signed access tokens with issuer, audience and expiry checks.
+- User-owned starter workspace and membership role.
+- Scoped API keys are generated randomly, stored only as HMAC digests, shown once, and can be revoked or expired.
+- Audit events for registration, verification, login and API-key lifecycle.
+- Development/test-only verification token response; production never returns the token.
+
+Important: an email delivery provider, resend flow, login/registration rate limiting, MFA, session revocation, recovery flow and security review are not implemented yet. Do not open public account registration until email delivery and abuse controls are live.
+
 ## Implemented foundation
 
 - FastAPI control-plane skeleton and health endpoint.
