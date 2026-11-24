@@ -4,12 +4,13 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
+from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.admin import require_platform_admin
 from app.database import get_db
-from app.models import AuditEvent, ComputeWorker, User
+from app.models import AuditEvent, ComputeWorker, User, WorkerBenchmark
 from app.security import digest_secret
 
 router = APIRouter(prefix="/v1", tags=["compute-workers"])
@@ -50,6 +51,19 @@ class HardwareHeartbeat(BaseModel):
         if total is not None and value > total:
             raise ValueError("Available RAM cannot exceed total RAM")
         return value
+
+
+class BenchmarkSubmission(BaseModel):
+    benchmark_name: Literal["alphaai-fp32-matmul-v1"]
+    benchmark_version: str = Field(min_length=1, max_length=40)
+    device_name: str = Field(min_length=1, max_length=120)
+    device_vram_bytes: int = Field(ge=1, le=2_000_000_000_000)
+    matrix_size: int = Field(ge=256, le=2048)
+    repetitions: int = Field(ge=1, le=100)
+    average_latency_ms: float = Field(gt=0, le=600_000, allow_inf_nan=False)
+    torch_version: str = Field(min_length=1, max_length=40)
+    cuda_version: str = Field(min_length=1, max_length=40)
+    driver_version: str | None = Field(default=None, max_length=40)
 
 
 @router.post("/admin/workers", status_code=status.HTTP_201_CREATED)
@@ -123,6 +137,87 @@ def worker_heartbeat(
     worker.last_seen_at = now
     db.commit()
     return {"worker_id": worker.worker_id, "accepted": True, "received_at": now}
+
+
+@router.post("/workers/benchmarks", status_code=status.HTTP_201_CREATED)
+def submit_worker_benchmark(
+    payload: BenchmarkSubmission,
+    worker: ComputeWorker = Depends(authenticate_worker),
+    db: Session = Depends(get_db),
+):
+    # Derive the headline score on the server; never trust a client-supplied TFLOPS value.
+    operations = 2 * (payload.matrix_size ** 3)
+    tflops = (operations / (payload.average_latency_ms / 1000)) / 1_000_000_000_000
+    if not 0 < tflops <= 100_000:
+        raise HTTPException(status_code=422, detail="Benchmark result is outside supported bounds")
+    result = WorkerBenchmark(
+        worker_id=worker.id,
+        benchmark_name=payload.benchmark_name,
+        benchmark_version=payload.benchmark_version,
+        device_name=payload.device_name,
+        device_vram_bytes=payload.device_vram_bytes,
+        matrix_size=payload.matrix_size,
+        repetitions=payload.repetitions,
+        average_latency_ms=payload.average_latency_ms,
+        estimated_fp32_tflops=tflops,
+        measurement_json={
+            "torch_version": payload.torch_version,
+            "cuda_version": payload.cuda_version,
+            "driver_version": payload.driver_version,
+            "provenance": "worker-reported; not independently attested",
+        },
+    )
+    db.add(result)
+    db.commit()
+    db.refresh(result)
+    return {
+        "id": result.id,
+        "benchmark_name": result.benchmark_name,
+        "device_name": result.device_name,
+        "average_latency_ms": result.average_latency_ms,
+        "estimated_fp32_tflops": result.estimated_fp32_tflops,
+        "trust_status": "unverified",
+        "created_at": result.created_at,
+    }
+
+
+@router.get("/admin/workers/benchmarks")
+def list_worker_benchmarks(
+    _admin: User = Depends(require_platform_admin),
+    limit: int =  Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    rows = db.scalars(
+        select(WorkerBenchmark)
+        .order_by(WorkerBenchmark.created_at.desc())
+        .limit(limit)
+    ).all()
+    workers = {
+        worker.id: worker
+        for worker in db.scalars(select(ComputeWorker)).all()
+    }
+    return {
+        "items": [
+            {
+                "id": row.id,
+                "worker_id": workers[row.worker_id].worker_id,
+                "worker_name": workers[row.worker_id].name,
+                "benchmark_name": row.benchmark_name,
+                "device_name": row.device_name,
+                "device_vram_bytes": row.device_vram_bytes,
+                "matrix_size": row.matrix_size,
+                "repetitions": row.repetitions,
+                "average_latency_ms": row.average_latency_ms,
+                "estimated_fp32_tflops": row.estimated_fp32_tflops,
+                "measurement": row.measurement_json,
+                "trust_status": "unverified",
+                "created_at": row.created_at,
+            }
+            for row in rows if row.worker_id in workers
+        ],
+        "total_returned": len(rows),
+        "limit": limit,
+    }
 
 
 @router.get("/admin/workers")
