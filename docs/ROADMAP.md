@@ -67,7 +67,9 @@
 - [ ] Multi-model comparison and load tests
 
 ## Gate E — Controlled public beta
-- [ ] Web dashboard and onboarding
+- [x] Public landing page and interactive read-only model explorer preview
+- [x] Database-backed readiness probe and preview deployment blueprint
+- [ ] Public account onboarding and transactional email delivery
 - [ ] Terms, privacy and acceptable-use policies
 - [ ] Abuse reporting, rate limits and moderation controls
 - [ ] Admin kill switch and incident runbook
