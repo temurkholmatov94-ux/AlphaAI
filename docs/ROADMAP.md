@@ -8,15 +8,22 @@
 - [x] SQLAlchemy model registry schema and Alembic migrations
 - [x] Read-only registry list/detail endpoints and filtering
 - [x] CI migration, automated test and Docker build steps
-- [ ] Dependency/security scanning and release workflow
 
 ## Gate B — Secure control plane
-- [ ] Database migrations and typed persistence models — registry is migrated; identity/tenant migrations remain
-- [ ] Authentication and verified account flow
-- [ ] Organization, project and role model
-- [ ] API key issuance, hashing, scopes, rotation and revocation
-- [ ] Audit events and admin operations
-- [ ] Atomic quota/spend reservation and global kill switch
+- [x] User registration and Argon2id password hashing
+- [x] Single-use, expiring email-verification token records
+- [x] Short-lived signed access tokens and verified-user guard
+- [x] Initial user workspace and owner membership
+- [x] Scoped API key creation, one-time display, hashed storage and revocation
+- [x] Audit events for core identity and key lifecycle events
+- [ ] Transactional email delivery and verification resend flow
+- [ ] Login/registration/API-key rate limits and abuse protection
+- [ ] Password recovery and MFA
+- [ ] Organization invitations, membership management and role administration
+- [ ] Organization/project isolation on every resource
+- [ ] API key rotation, last-used UI and service accounts
+- [ ] Usage ledger, atomic quota/spend reservation and global kill switch
+- [ ] Production session revocation and security review
 
 ## Gate C — Model Universe
 - [x] Initial model registry and public read-only API
