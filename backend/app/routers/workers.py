@@ -121,20 +121,6 @@ def worker_heartbeat(
     now = datetime.now(timezone.utc)
     worker.hardware_report = payload.model_dump()
     worker.last_seen_at = now
-    db.add(
-        AuditEvent(
-            actor_user_id=None,
-            action="compute_worker.heartbeat",
-            resource_type="compute_worker",
-            resource_id=worker.worker_id,
-            details={
-                "agent_version": payload.agent_version,
-                "gpu_count": len(payload.gpus),
-                "cpu_logical_cores": payload.cpu_logical_cores,
-                "ram_total_mb": payload.ram_total_mb,
-            },
-        )
-    )
     db.commit()
     return {"worker_id": worker.worker_id, "accepted": True, "received_at": now}
 
