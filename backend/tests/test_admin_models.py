@@ -281,8 +281,7 @@ def test_worker_benchmark_submission_derives_score_and_is_unverified(client, mon
     assert result["trust_status"] == "unverified"
     assert result["estimated_fp32_tflops"] == 0.2147483648
 
-    _, admin_headers = admin_client(client, monkeypatch)
-    listed = client.get("/v1/admin/workers/benchmarks", headers=admin_headers)
+    listed = client.get("/v1/admin/workers/benchmarks", headers=headers)
     assert listed.status_code == 200
     assert listed.json()["total_returned"] == 1
     assert listed.json()["items"][0]["device_name"] == "Test NVIDIA GPU"
