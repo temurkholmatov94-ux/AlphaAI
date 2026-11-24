@@ -37,12 +37,21 @@
 - [ ] Additional verified model source connectors
 
 ## Gate D — Inference and intelligence
-- [ ] Provider adapter contract and contract tests
+- [x] Provider-neutral adapter contract and normalized errors
+- [x] OpenAI-compatible provider adapter
+- [x] Anthropic Messages adapter
+- [x] Optional xAI OpenAI-compatible adapter
+- [x] Explicit model alias to provider/upstream model routing
+- [x] Mocked provider contract tests; no live provider calls in CI
+- [ ] Persistent usage ledger and token/cost accounting
+- [ ] Atomic quota and spend reservations before provider calls
+- [ ] Per-user/org/key rate and concurrency limits
+- [ ] Global budget ceiling and emergency kill switch
+- [ ] Authenticated inference endpoint after budget controls pass
+- [ ] Provider health checks, circuit breakers and safe fallback policy
 - [ ] Self-hosted inference adapter (vLLM)
-- [ ] Official hosted provider adapters
-- [ ] Policy-aware gateway and model routing
-- [ ] Multi-model comparison and fallback
-- [ ] Usage metering, budget enforcement and load tests
+- [ ] Policy-aware task router and model selection
+- [ ] Multi-model comparison and load tests
 
 ## Gate E — Controlled public beta
 - [ ] Web dashboard and onboarding
