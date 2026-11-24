@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+from sqlalchemy import text
 
 from app.config import get_settings
 from app.routers.admin_models import router as admin_models_router
@@ -47,3 +48,9 @@ def public_homepage() -> FileResponse:
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "alphaai-control-plane"}
+
+
+@app.get("/ready", tags=["system"])
+def readiness(db=Depends(get_db)) -> dict[str, str]:
+    db.execute(text("SELECT 1"))
+    return {"status": "ready", "service": "alphaai-control-plane"}
