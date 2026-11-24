@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from app.database import get_db
-from app.discovery.huggingface import HuggingFaceDiscovery, map_huggingface_model
+from app.discovery.huggingface import HuggingFaceDiscovery, infer_model_identity, map_huggingface_model
 from app.main import app
 from app.models import ModelRecord
 
@@ -171,3 +171,25 @@ def test_discovery_refreshes_weight_facts_without_changing_human_publication(cli
     finally:
         db.close()
         db_generator.close()
+
+
+def test_model_identity_hints_group_quantized_variant_without_claiming_identity():
+    base = infer_model_identity("Qwen/Qwen2.5-7B-Instruct")
+    quantized = infer_model_identity("Qwen/Qwen2.5-7B-Instruct-AWQ")
+    community = infer_model_identity("community-user/Qwen2.5-7B-Instruct-AWQ")
+    assert base["canonical_name"] == quantized["canonical_name"]
+    assert quantized["variant_type"] == "quantized"
+    assert community["publisher_namespace"] == "community-user"
+
+
+def test_discovery_maps_identity_as_unreviewed_hint():
+    info = SimpleNamespace(
+        id="Qwen/Qwen2.5-7B-Instruct-AWQ",
+        card_data=None,
+        gated=False,
+        siblings=[SimpleNamespace(rfilename="model.safetensors")],
+    )
+    mapped = map_huggingface_model(info)
+    assert mapped["publisher_namespace"] == "Qwen"
+    assert mapped["variant_type"] == "quantized"
+    assert mapped["identity_status"] == "unreviewed"
