@@ -109,3 +109,52 @@ class ModelRecord(Base):
     last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class UsageAccount(Base):
+    __tablename__ = "usage_accounts"
+    __table_args__ = (UniqueConstraint("organization_id", name="uq_usage_account_organization"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
+    budget_limit_microusd: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    reserved_microusd: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    spent_microusd: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class UsageReservation(Base):
+    __tablename__ = "usage_reservations"
+    __table_args__ = (
+        UniqueConstraint("usage_account_id", "idempotency_key", name="uq_usage_reservation_idempotency"),
+        Index("ix_usage_reservations_account_status", "usage_account_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usage_account_id: Mapped[int] = mapped_column(ForeignKey("usage_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    estimated_microusd: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    actual_microusd: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="reserved", nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(100), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class UsageEvent(Base):
+    __tablename__ = "usage_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usage_account_id: Mapped[int] = mapped_column(ForeignKey("usage_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    reservation_id: Mapped[int] = mapped_column(ForeignKey("usage_reservations.id", ondelete="RESTRICT"), unique=True, nullable=False)
+    provider: Mapped[str] = mapped_column(String(100), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    input_tokens: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    cost_microusd: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
