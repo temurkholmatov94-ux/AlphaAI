@@ -83,7 +83,9 @@
 
 ## Gate G — Distributed performance
 - [x] Opt-in local NVIDIA FP32 benchmark with explicit run flag and bounded workload
-- [ ] Signed benchmark result reporting and server-side validation
+- [x] Authenticated worker benchmark submission with bounded fields and server-derived FP32 score
+- [x] Admin benchmark inventory with explicit unverified trust status
+- [ ] Signed benchmark result reporting and independent server-side attestation
 - [ ] GPU inventory and scheduler
 - [ ] Multi-GPU serving and workload isolation
 - [ ] Queue-aware autoscaling
