@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.config import get_settings
+from app.routers.admin_models import router as admin_models_router
 from app.routers.api_keys import router as api_keys_router
 from app.routers.auth import router as auth_router
 from app.routers.models import router as models_router
@@ -18,6 +19,7 @@ app.include_router(auth_router)
 app.include_router(api_keys_router)
 app.include_router(organizations_router)
 app.include_router(models_router)
+app.include_router(admin_models_router)
 
 
 @app.get("/", tags=["system"])
