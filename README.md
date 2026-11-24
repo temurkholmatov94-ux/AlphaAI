@@ -58,11 +58,25 @@ A catalog entry is not a promise that a model is downloadable, free, licensed fo
 
 Important: an email delivery provider, resend flow, login/registration rate limiting, MFA, session revocation, recovery flow and security review are not implemented yet. Do not open public account registration until email delivery and abuse controls are live.
 
+## Provider gateway foundation (implemented; inference endpoint intentionally not exposed)
+
+- Provider-neutral request/response and error contracts.
+- OpenAI Chat Completions-compatible adapter (supports provider-configured base URLs).
+- Anthropic Messages API adapter.
+- Optional xAI adapter using the OpenAI-compatible protocol.
+- Server-side credentials and explicit public-model-to-upstream-model routing.
+- Timeouts, normalized errors, token usage extraction and mocked HTTP contract tests.
+- No automatic retry: retries can duplicate provider charges when request outcome is ambiguous.
+
+Provider credentials belong only in local environment files or a production secret manager. The ALPHAAI_MODEL_ROUTES setting is a JSON array, for example: ["alpha-fast=openai:gpt-model-id"]. A route is omitted unless its provider credential exists.
+
+**Important safety boundary:** these adapters are an internal foundation, not a public inference endpoint. Public inference remains disabled until persistent usage accounting, atomic quota/spend reservations, rate limits, output limits, a hard global budget ceiling and an emergency kill switch are implemented and tested.
+
 ## Implemented foundation
 
 - FastAPI control-plane skeleton and health endpoint.
 - PostgreSQL/SQLite-compatible SQLAlchemy model registry schema.
-- Alembic migration for the initial registry table.
+- Alembic migrations for the registry and identity.
 - Read-only public registry endpoints with search, provider/task filters, pagination and slash-containing model IDs.
 - Public visibility requires an available record, verified/not-applicable license status, and known access method.
 - CI runs database migrations, automated tests and Docker image build.
@@ -78,7 +92,7 @@ Requirements: Docker Engine or Docker Desktop with Compose.
 3. Run docker compose up --build.
 4. Open http://localhost:8000/health.
 5. Explore http://localhost:8000/docs.
-6. To discover public Hub models into the internal review queue, run `docker compose exec api python -m scripts.discover_huggingface --limit 50 --pipeline-tag text-generation`.
+6. To discover public Hub models into the internal review queue, run: docker compose exec api python -m scripts.discover_huggingface --limit 50 --pipeline-tag text-generation.
 
 New discoveries remain unapproved and hidden from public listings until a human verifies license and runtime access. Never commit real credentials, private datasets, user data, or model weights.
 
