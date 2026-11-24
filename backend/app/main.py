@@ -9,6 +9,7 @@ from app.routers.admin_providers import router as admin_providers_router
 from app.routers.api_keys import router as api_keys_router
 from app.routers.auth import router as auth_router
 from app.routers.models import router as models_router
+from app.routers.workers import router as workers_router
 from app.routers.organizations import router as organizations_router
 
 settings = get_settings()
@@ -25,6 +26,7 @@ app.include_router(organizations_router)
 app.include_router(models_router)
 app.include_router(admin_models_router)
 app.include_router(admin_providers_router)
+app.include_router(workers_router)
 
 
 @app.get("/admin", include_in_schema=False)
