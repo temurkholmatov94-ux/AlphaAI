@@ -22,7 +22,7 @@
 - [ ] Organization invitations, membership management and role administration
 - [ ] Organization/project isolation on every resource
 - [ ] API key rotation, last-used UI and service accounts
-- [ ] Usage ledger, atomic quota/spend reservation and global kill switch
+- [x] Organization usage accounts and atomic spend reservations\n- [x] Idempotent reservation and immutable usage settlement ledger\n- [ ] Trusted model pricing table and conservative preflight cost estimator\n- [ ] Operator-only budget provisioning and global kill switch
 - [ ] Production session revocation and security review
 
 ## Gate C — Model Universe
