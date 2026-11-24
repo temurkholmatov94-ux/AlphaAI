@@ -32,6 +32,11 @@ app.include_router(admin_providers_router)
 app.include_router(workers_router)
 
 
+@app.get("/bootstrap-admin", include_in_schema=False)
+def admin_bootstrap_page() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "bootstrap-admin.html")
+
+
 @app.get("/admin", include_in_schema=False)
 def admin_console() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "admin.html")
