@@ -1,6 +1,16 @@
-# Preview-only deployment. This creates one free web service and no paid database.
-# SQLite is intentionally used only for a disposable visual preview; its filesystem
-# is ephemeral on free web services. Do not use this configuration for real users.
+# AlphaAI preview + durable PostgreSQL.
+# The web service remains on Render Free. PostgreSQL uses the approved
+# basic-256mb plan (currently listed at $6/month); review Render's sync
+# estimate before applying. No other paid resources are defined here.
+databases:
+  - name: alphaai-db
+    databaseName: alphaai
+    user: alphaai
+    plan: basic-256mb
+    region: frankfurt
+    ipAllowList: []
+    storageAutoscalingEnabled: false
+
 services:
   - type: web
     name: alphaai-preview
@@ -17,6 +27,8 @@ services:
       - key: APP_NAME
         value: AlphaAI
       - key: DATABASE_URL
-        value: sqlite:////tmp/alphaai-preview.db
+        fromDatabase:
+          name: alphaai-db
+          property: connectionString
       - key: ALPHAAI_SECRET_KEY
         generateValue: true
