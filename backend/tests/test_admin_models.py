@@ -121,3 +121,11 @@ def test_non_admin_cannot_publish_model(client, monkeypatch):
         },
     )
     assert response.status_code == 403
+
+
+def test_admin_console_page_is_served(client):
+    response = client.get("/admin")
+    assert response.status_code == 200
+    assert "AlphaAI" in response.text
+    assert "Administrator access" in response.text
+    assert "/v1/admin/models/review-queue" in response.text
