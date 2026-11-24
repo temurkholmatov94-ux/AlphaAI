@@ -51,7 +51,17 @@ def list_review_queue(
     if q:
         pattern = f"%{q.strip()}%"
         statement = statement.where(ModelRecord.model_id.ilike(pattern) | ModelRecord.display_name.ilike(pattern))
-    count_statement = select(func.count()).select_from(ModelRecord).where(\n        ModelRecord.availability_status.in_(("discovered", "review-required", "degraded"))\n    )\n    if q:\n        pattern = f"%{q.strip()}%"\n        count_statement = count_statement.where(\n            ModelRecord.model_id.ilike(pattern) | ModelRecord.display_name.ilike(pattern)\n        )\n    total = db.scalar(count_statement) or 0
+    count_statement = (
+        select(func.count())
+        .select_from(ModelRecord)
+        .where(ModelRecord.availability_status.in_(("discovered", "review-required", "degraded")))
+    )
+    if q:
+        pattern = f"%{q.strip()}%"
+        count_statement = count_statement.where(
+            ModelRecord.model_id.ilike(pattern) | ModelRecord.display_name.ilike(pattern)
+        )
+    total = db.scalar(count_statement) or 0
     items = db.scalars(
         statement.order_by(ModelRecord.updated_at.desc(), ModelRecord.id.desc())
         .limit(limit).offset(offset)
