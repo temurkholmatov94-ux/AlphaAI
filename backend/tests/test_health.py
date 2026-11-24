@@ -17,4 +17,5 @@ def test_health_endpoint() -> None:
 def test_root_endpoint() -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json()["name"] == "AlphaAI"
+    assert "The Intelligence Universe" in response.text
+    assert "Not a live inference service" in response.text
