@@ -319,3 +319,51 @@ def test_worker_benchmark_rejects_out_of_bounds_submission(client, monkeypatch):
     )
     assert response.status_code == 422
     get_settings.cache_clear()
+
+
+def test_model_discovery_endpoint_requires_platform_admin(client, monkeypatch):
+    response = client.post("/v1/admin/models/discover", json={"limit": 5})
+    assert response.status_code == 401
+
+
+def test_admin_can_trigger_bounded_model_discovery(client, monkeypatch):
+    from app.discovery.huggingface import HuggingFaceDiscovery
+
+    class FakeDiscovery:
+        def ingest(self, db, *, limit, search, pipeline_tag):
+            assert limit == 10
+            assert search == "llama"
+            assert pipeline_tag == "text-generation"
+            return {"fetched": 2, "created": 2, "updated": 0}
+
+    monkeypatch.setattr("app.routers.admin_models.HuggingFaceDiscovery", FakeDiscovery)
+    _, headers = admin_client(client, monkeypatch)
+    response = client.post(
+        "/v1/admin/models/discover",
+        headers=headers,
+        json={"limit": 10, "search": "llama", "pipeline_tag": "text-generation"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "source": "huggingface", "fetched": 2, "created": 2, "updated": 0
+    }
+
+    generator = app.dependency_overrides[get_db]()
+    db = next(generator)
+    try:
+        event = db.scalar(select(AuditEvent).where(AuditEvent.action == "model.discovery_completed"))
+        assert event is not None
+        assert event.details["created"] == 2
+    finally:
+        db.close()
+        generator.close()
+
+
+def test_model_discovery_rejects_limits_over_100(client, monkeypatch):
+    _, headers = admin_client(client, monkeypatch)
+    response = client.post(
+        "/v1/admin/models/discover",
+        headers=headers,
+        json={"limit": 101},
+    )
+    assert response.status_code == 422
