@@ -23,6 +23,7 @@ input,select{width:100%;border:1px solid var(--line);border-radius:9px;backgroun
 <div class="layout"><section class="panel"><div class="top" style="margin:0"><div><div class="eyebrow">Model Universe</div><h2 style="margin:4px 0">Review queue</h2><div class="muted">Discovered models stay hidden until an administrator verifies license and access.</div></div><button id="refresh">Refresh</button></div><div class="toolbar"><input id="search" type="search" placeholder="Search model or publisher…"><button id="searchButton">Search</button></div><div class="table-wrap"><table><thead><tr><th>Model</th><th>Provider</th><th>License</th><th>State</th><th>Action</th></tr></thead><tbody id="models"><tr><td colspan="5" class="muted">Sign in to load models.</td></tr></tbody></table></div><div id="queueMessage" class="footer" role="status"></div></section>
 <aside class="panel detail"><div class="eyebrow">Review inspector</div><h2 style="margin:4px 0 8px">Selected model</h2><div id="selected" class="notice">Choose a model from the queue to inspect its metadata and record a review.</div><form id="reviewForm" class="hidden"><div class="field"><label for="license">License assessment</label><select id="license"><option value="unknown">Unknown — not reviewed</option><option value="verified">Verified — evidence checked</option><option value="not_applicable">Not applicable</option><option value="restricted">Restricted</option><option value="rejected">Rejected</option></select></div><div class="field"><label for="access">Access method</label><select id="access"><option value="unknown">Unknown</option><option value="download">Public download</option><option value="gated_download">Gated download</option><option value="hosted_api">Hosted provider API</option><option value="self_hosted">Self-hosted deployment</option></select></div><div class="field"><label for="availability">Catalog state</label><select id="availability"><option value="review-required">Review required</option><option value="available">Available — publish</option><option value="degraded">Degraded</option><option value="retired">Retired</option></select></div><div class="notice">Publishing is allowed only when the license is verified or not applicable and the access method is known. This tool records your assessment; it does not independently verify legal rights.</div><button class="primary" type="submit" id="saveReview">Save review</button><div id="reviewMessage" class="footer" role="status"></div></form></aside></div>
 <section class="panel" style="margin-top:16px"><div class="eyebrow">Infrastructure</div><h2 style="margin:4px 0">Provider configuration</h2><p class="muted">Server-side credential configuration and route mappings. This is not a live provider health check.</p><div id="providers" class="stats"><div class="notice">Sign in to inspect provider configuration.</div></div></section>
+<section class="panel" style="margin-top:16px"><div class="eyebrow">Compute fabric</div><h2 style="margin:4px 0">Worker inventory</h2><p class="muted">Register trusted worker machines, inspect reported hardware and revoke compromised credentials.</p><form id="workerForm" class="toolbar"><input id="workerName" required minlength="2" maxlength="120" placeholder="Worker name, e.g. gpu-node-01"><button class="primary" type="submit" id="createWorker">Register worker</button></form><div id="workerTokenNotice" class="notice hidden" role="status"></div><div id="workers" class="table-wrap"><div class="muted">Sign in to inspect compute workers.</div></div></section>
 </main>
 <div class="footer">AlphaAI Control Center · Admin actions are authenticated and recorded in the audit log. Public inference remains disabled until budget and abuse controls pass release gates.</div>
 </div>
@@ -33,7 +34,30 @@ const $=id=>document.getElementById(id);
 async function api(path,options={}){const headers={"Content-Type":"application/json",...(options.headers||{})};if(token)headers.Authorization="Bearer "+token;const response=await fetch(path,{...options,headers});let body={};try{body=await response.json()}catch{}if(!response.ok)throw new Error(body.detail||("Request failed ("+response.status+")"));return body}
 function message(id,text,kind=""){const node=$(id);node.textContent=text;node.className="notice "+kind}
 function el(tag,text,cls){const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n}
-async function load(){try{const [q,p,providers]=await Promise.all([api("/v1/admin/models/review-queue?limit=100"),api("/v1/models?limit=1"),api("/v1/admin/providers")]);queue=q.items||[];$("total").textContent=q.total;$("publicCount").textContent=p.total;$("apiStatus").textContent="Online";$("session").textContent="Authenticated administrator";render();renderProviders(providers)}catch(e){$("apiStatus").textContent="Error";message("queueMessage",e.message,"error")}}
+async function load(){try{const [q,p,providers,workers]=await Promise.all([api("/v1/admin/models/review-queue?limit=100"),api("/v1/models?limit=1"),api("/v1/admin/providers"),api("/v1/admin/workers")]);queue=q.items||[];$("total").textContent=q.total;$("publicCount").textContent=p.total;$("apiStatus").textContent="Online";$("session").textContent="Authenticated administrator";render();renderProviders(providers);renderWorkers(workers)}catch(e){$("apiStatus").textContent="Error";message("queueMessage",e.message,"error")}}
+function renderWorkers(data){
+ const root=$("workers");root.replaceChildren();const items=data.items||[];
+ if(!items.length){root.append(el("div","No workers registered yet.","muted"));return}
+ const table=document.createElement("table");
+ table.innerHTML='<thead><tr><th>Worker</th><th>Status</th><th>CPU / RAM</th><th>GPU inventory</th><th>Last heartbeat</th><th>Action</th></tr></thead>';
+ const body=document.createElement("tbody");
+ for(const worker of items){
+  const hw=worker.hardware||{};const row=document.createElement("tr");
+  const name=el("td",worker.name);name.append(el("small",worker.worker_id,"muted"));
+  const state=el("td",worker.status,worker.status==="online"?"success":"muted");
+  const cpu=el("td",(hw.cpu_logical_cores||"—")+" cores / "+(hw.ram_total_mb||"—")+" MB");
+  const gpu=el("td",(hw.gpus||[]).map(g=>g.name+" ("+g.vram_mb+" MB)").join(", ")||"No GPU reported");
+  const seen=el("td",worker.last_seen_at?new Date(worker.last_seen_at).toLocaleString():"Never");
+  const action=el("td","");
+  if(worker.active){const button=el("button","Revoke","danger");button.addEventListener("click",async()=>{
+   if(!confirm("Revoke this worker's credentials?"))return;
+   try{await api("/v1/admin/workers/"+encodeURIComponent(worker.worker_id)+"/revoke",{method:"POST"});await load()}
+   catch(error){message("queueMessage",error.message,"error")}
+  });action.append(button)}else action.textContent="Revoked";
+  row.append(name,state,cpu,gpu,seen,action);body.append(row)
+ }
+ table.append(body);root.append(table)
+}
 function renderProviders(data){const root=$("providers");root.replaceChildren();for(const provider of data.providers||[]){const card=document.createElement("div");card.className="panel";card.style.padding="14px";const heading=el("strong",provider.name.toUpperCase());const status=el("span",provider.status,provider.credential_configured?"success":"muted");const protocol=el("div",provider.protocol,"muted");const routes=el("div",provider.configured_route_count+" configured route(s)");const health=el("small","Live health: not checked","muted");card.append(heading,status,protocol,routes,health);root.append(card)}if(!data.providers||!data.providers.length)root.append(el("div","No provider adapters registered."));}
 function render(){const body=$("models");body.replaceChildren();if(!queue.length){const row=document.createElement("tr"),cell=el("td","No models currently need review.");cell.colSpan=5;row.append(cell);body.append(row);return}
 for(const model of queue){const row=document.createElement("tr");const name=document.createElement("td");name.append(el("strong",model.display_name));name.append(el("small",model.model_id,"muted"));const provider=el("td",model.provider);const license=el("td",model.license_id||"Not specified");const state=el("td",model.availability_status,"pill");const action=document.createElement("td");const button=el("button","Inspect");button.type="button";button.addEventListener("click",()=>select(model));action.append(button);row.append(name,provider,license,state,action);body.append(row)}}
@@ -41,6 +65,17 @@ function select(model){selectedModel=model;$("selected").replaceChildren();$("se
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginButton").disabled=true;message("loginMessage","Signing in…");try{const result=await api("/v1/auth/login",{method:"POST",body:JSON.stringify({email:$("email").value,password:$("password").value})});token=result.access_token;const me=await api("/v1/auth/me");$("login").classList.add("hidden");$("dashboard").classList.remove("hidden");$("session").textContent="Signed in: "+me.email;await load()}catch(error){token=null;message("loginMessage",error.message,"error")}finally{$("loginButton").disabled=false}});
 $("refresh").addEventListener("click",load);$("searchButton").addEventListener("click",async()=>{try{const query=encodeURIComponent($("search").value.trim());const result=await api("/v1/admin/models/review-queue?limit=100&q="+query);queue=result.items||[];$("total").textContent=result.total;render()}catch(e){message("queueMessage",e.message,"error")}});
 $("reviewForm").addEventListener("submit",async e=>{e.preventDefault();if(!selectedModel)return;$("saveReview").disabled=true;try{await api("/v1/admin/models/"+selectedModel.model_id.split("/").map(encodeURIComponent).join("/")+"/review",{method:"PATCH",body:JSON.stringify({license_status:$("license").value,access_method:$("access").value,availability_status:$("availability").value})});message("reviewMessage","Review saved. Audit event recorded.","success");selectedModel=null;$("reviewForm").classList.add("hidden");$("selected").textContent="Review saved. Select another model.";await load()}catch(error){message("reviewMessage",error.message,"error")}finally{$("saveReview").disabled=false}});
+$("workerForm").addEventListener("submit",async e=>{
+ e.preventDefault();$("createWorker").disabled=true;
+ try{
+  const result=await api("/v1/admin/workers",{method:"POST",body:JSON.stringify({name:$("workerName").value.trim()})});
+  const notice=$("workerTokenNotice");notice.classList.remove("hidden");notice.replaceChildren(el("strong","Worker registered. Copy this token now; it will not be shown again."),el("div",result.worker_id,"muted"));
+  const code=el("code",result.worker_token);code.style.display="block";code.style.overflowWrap="anywhere";code.style.margin="8px 0";notice.append(code);
+  const copy=el("button","Copy worker token");copy.addEventListener("click",()=>navigator.clipboard.writeText(result.worker_token));notice.append(copy);
+  $("workerName").value="";await load()
+ }catch(error){message("workerTokenNotice",error.message,"error");$("workerTokenNotice").classList.remove("hidden")}
+ finally{$("createWorker").disabled=false}
+});
 })();
 </script>
 </body></html>
