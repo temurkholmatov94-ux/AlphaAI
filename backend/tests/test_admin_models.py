@@ -155,3 +155,91 @@ def test_admin_provider_inventory_never_exposes_credentials(client, monkeypatch)
     assert "alpha-fast" in body
     assert "configured" in body
     get_settings.cache_clear()
+
+
+def test_compute_worker_lifecycle_and_hardware_heartbeat(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ALPHAAI_ADMIN_EMAILS", '["admin@example.com"]')
+    get_settings.cache_clear()
+    _, headers = admin_client(client, monkeypatch)
+    created = client.post(
+        "/v1/admin/workers",
+        headers=headers,
+        json={"name": "Test GPU worker"},
+    )
+    assert created.status_code == 201
+    data = created.json()
+    assert data["worker_id"].startswith("wkr_")
+    assert data["worker_token"].startswith("aai_worker_")
+    assert data["token_display"] == "shown-once"
+
+    heartbeat = client.post(
+        "/v1/workers/heartbeat",
+        headers={"Authorization": "Bearer " + data["worker_token"]},
+        json={
+            "agent_version": "0.1.0",
+            "os": "Linux",
+            "architecture": "x86_64",
+            "cpu_model": "Test CPU",
+            "cpu_logical_cores": 16,
+            "ram_total_mb": 32768,
+            "ram_available_mb": 24000,
+            "gpus": [{"name": "Test GPU", "vendor": "NVIDIA", "vram_mb": 24576}],
+        },
+    )
+    assert heartbeat.status_code == 200
+    assert heartbeat.json()["accepted"] is True
+
+    listed = client.get("/v1/admin/workers", headers=headers)
+    assert listed.status_code == 200
+    worker = listed.json()["items"][0]
+    assert worker["worker_id"] == data["worker_id"]
+    assert worker["status"] == "online"
+    assert worker["hardware"]["gpus"][0]["vram_mb"] == 24576
+
+    revoked = client.post(
+        f"/v1/admin/workers/{data['worker_id']}/revoke",
+        headers=headers,
+    )
+    assert revoked.status_code == 200
+    rejected = client.post(
+        "/v1/workers/heartbeat",
+        headers={"Authorization": "Bearer " + data["worker_token"]},
+        json={
+            "agent_version": "0.1.0",
+            "os": "Linux",
+            "architecture": "x86_64",
+            "cpu_logical_cores": 4,
+            "ram_total_mb": 8192,
+            "ram_available_mb": 4096,
+            "gpus": [],
+        },
+    )
+    assert rejected.status_code == 401
+    get_settings.cache_clear()
+
+
+def test_worker_heartbeat_rejects_invalid_hardware_bounds(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ALPHAAI_ADMIN_EMAILS", '["admin@example.com"]')
+    get_settings.cache_clear()
+    _, headers = admin_client(client, monkeypatch)
+    created = client.post("/v1/admin/workers", headers=headers, json={"name": "Bound test worker"})
+    token = created.json()["worker_token"]
+    response = client.post(
+        "/v1/workers/heartbeat",
+        headers={"Authorization": "Bearer " + token},
+        json={
+            "agent_version": "0.1.0",
+            "os": "Linux",
+            "architecture": "x86_64",
+            "cpu_logical_cores": 4,
+            "ram_total_mb": 4096,
+            "ram_available_mb": 8192,
+            "gpus": [],
+        },
+    )
+    assert response.status_code == 422
+    get_settings.cache_clear()
