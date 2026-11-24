@@ -32,5 +32,7 @@ jobs:
         env:
           PYTHONPATH: .
         run: pytest -q
+      - name: Validate worker agent syntax
+        run: cd .. && python -m py_compile worker-agent/agent.py
       - name: Build API container
         run: docker build -t alphaai-api .
