@@ -7,9 +7,57 @@ from sqlalchemy.orm import Session
 
 from app.admin import require_platform_admin
 from app.database import get_db
+from app.discovery.huggingface import HuggingFaceDiscovery
 from app.models import AuditEvent, ModelRecord, User
 
 router = APIRouter(prefix="/v1/admin/models", tags=["platform-admin", "model-universe"])
+
+
+class ModelDiscoveryRequest(BaseModel):
+    limit: int = Field(default=25, ge=1, le=100)
+    search: str | None = Field(default=None, max_length=120)
+    pipeline_tag: str | None = Field(default=None, max_length=80)
+
+
+@router.post("/discover")
+def discover_models(
+    payload: ModelDiscoveryRequest,
+    admin: User = Depends(require_platform_admin),
+    db: Session = Depends(get_db),
+):
+    """Fetch a bounded Hugging Face catalog page; discoveries remain unapproved."""
+    try:
+        result = HuggingFaceDiscovery().ingest(
+            db,
+            limit=payload.limit,
+            search=payload.search,
+            pipeline_tag=payload.pipeline_tag,
+        )
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=502,
+            detail="Model discovery provider is temporarily unavailable",
+        ) from exc
+
+    db.add(
+        AuditEvent(
+            actor_user_id=admin.id,
+            action="model.discovery_completed",
+            resource_type="model_catalog",
+            resource_id=None,
+            details={
+                "source": "huggingface",
+                "search": payload.search,
+                "pipeline_tag": payload.pipeline_tag,
+                **result,
+            },
+        )
+    )
+    db.commit()
+    return {"source": "huggingface", **result}
+
+
 
 REVIEW_STATUSES = ("discovered", "review-required", "degraded", "retired", "available")
 LICENSE_STATUSES = ("unknown", "verified", "not_applicable", "restricted", "rejected")
