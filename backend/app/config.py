@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "AlphaAI"
-    app_env: str = "development"
+    app_env: str = "production"
     database_url: str = "sqlite:///./alphaai.db"
     redis_url: str = "redis://localhost:6379/0"
     huggingface_token: str | None = None
