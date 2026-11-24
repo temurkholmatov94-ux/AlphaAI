@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     huggingface_token: str | None = None
     alphaai_secret_key: str = ""
+    alphaai_bootstrap_token: str | None = None
     access_token_minutes: int = 30
 
     openai_api_key: str | None = None
