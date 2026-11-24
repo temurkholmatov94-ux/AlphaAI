@@ -125,3 +125,9 @@ Requirements: Docker Engine or Docker Desktop with Compose.
 New discoveries remain unapproved and hidden from public listings until a human verifies license and runtime access. Never commit real credentials, private datasets, user data, or model weights.
 
 See docs/MASTER_ARCHITECTURE.md, docs/THREAT_MODEL.md, and docs/ROADMAP.md.
+
+## Admin Control Center (first usable UI)
+
+Open `/admin` on the running API service. The responsive console signs in through the existing login endpoint, keeps the access token in page memory (not localStorage), loads the protected model review queue, displays upstream metadata, and submits explicit license/access/availability decisions. Review actions are written to the audit log. The UI does not infer legal permission from a model's popularity or metadata; administrators must verify evidence before publishing.
+
+The page is served from the same origin as the API, so it does not require a separate frontend deployment or permissive CORS configuration. It is an initial operations console, not the finished public product dashboard.
