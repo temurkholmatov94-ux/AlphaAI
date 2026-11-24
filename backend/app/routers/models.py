@@ -23,7 +23,7 @@ def list_models(
     return ModelListResponse(items=items, total=total, limit=limit, offset=offset)
 
 
-@router.get("/{model_id}", response_model=ModelRead)
+@router.get("/{model_id:path}", response_model=ModelRead)
 def read_model(model_id: str, db: Session = Depends(get_db)) -> ModelRead:
     model = get_public_model(db, model_id)
     if model is None:
