@@ -102,3 +102,33 @@ def test_pricing_estimator_rejects_unbounded_token_estimates(client, input_token
     finally:
         db.close()
         generator.close()
+
+
+def test_old_active_price_is_rejected_without_falling_back(client):
+    generator, db = open_test_db()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            ModelPricing(
+                provider="openai",
+                model_id="aged-price-model",
+                input_microusd_per_million_tokens=100,
+                output_microusd_per_million_tokens=200,
+                source_url="https://provider.example/pricing",
+                verified_at=now - timedelta(days=31),
+                effective_from=now - timedelta(days=31),
+                active=True,
+            )
+        )
+        db.commit()
+        with pytest.raises(PricingUnavailable):
+            estimate_max_cost_microusd(
+                db,
+                provider="openai",
+                model_id="aged-price-model",
+                estimated_input_tokens=100,
+                max_output_tokens=100,
+            )
+    finally:
+        db.close()
+        generator.close()
