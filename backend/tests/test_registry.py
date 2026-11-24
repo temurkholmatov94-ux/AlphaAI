@@ -1,33 +1,13 @@
-from app.database import SessionLocal
+from app.database import get_db
+from app.main import app
 from app.models import ModelRecord
 
 
-def seed_records():
-    db = SessionLocal()
+def insert_model(**values):
+    db_generator = app.dependency_overrides[get_db]()
+    db = next(db_generator)
     try:
-        db.add_all(
-            [
-                ModelRecord(
-                    model_id="alpha/test-chat",
-                    display_name="Test Chat",
-                    provider="Alpha",
-                    license_status="verified",
-                    access_method="hosted_api",
-                    availability_status="available",
-                    tasks=["text-generation"],
-                    modalities=["text"],
-                    weights_available=False,
-                ),
-                ModelRecord(
-                    model_id="alpha/private-preview",
-                    display_name="Private Preview",
-                    provider="Alpha",
-                    availability_status="review-required",
-                    tasks=["text-generation"],
-                    modalities=["text"],
-                ),
-            ]
-        )
+        db.add(ModelRecord(**values))
         db.commit()
     finally:
         db.close()
@@ -40,38 +20,26 @@ def test_public_registry_is_empty_without_database_records(client):
     assert response.json()["total"] == 0
 
 
-def test_model_list_and_private_record_hidden(client):
-    from app.database import get_db
-    from app.models import ModelRecord
+def test_model_list_and_unreviewed_record_hidden(client):
+    insert_model(
+        model_id="alpha/test-chat",
+        display_name="Test Chat",
+        provider="Alpha",
+        license_status="verified",
+        access_method="hosted_api",
+        availability_status="available",
+        tasks=["text-generation"],
+        modalities=["text"],
+    )
+    insert_model(
+        model_id="alpha/private-preview",
+        display_name="Private Preview",
+        provider="Alpha",
+        availability_status="review-required",
+        tasks=["text-generation"],
+        modalities=["text"],
+    )
 
-    def seed_override():
-        db = next(app.dependency_overrides[get_db]())
-        try:
-            db.add_all([
-                ModelRecord(
-                    model_id="alpha/test-chat",
-                    display_name="Test Chat",
-                    provider="Alpha",
-                    license_status="verified",
-                    access_method="hosted_api",
-                    availability_status="available",
-                    tasks=["text-generation"],
-                    modalities=["text"],
-                ),
-                ModelRecord(
-                    model_id="alpha/private-preview",
-                    display_name="Private Preview",
-                    provider="Alpha",
-                    availability_status="review-required",
-                    tasks=["text-generation"],
-                    modalities=["text"],
-                ),
-            ])
-            db.commit()
-        finally:
-            db.close()
-
-    seed_override()
     response = client.get("/v1/models?q=Test")
     assert response.status_code == 200
     payload = response.json()
@@ -81,24 +49,20 @@ def test_model_list_and_private_record_hidden(client):
 
 
 def test_model_detail_returns_available_model(client):
-    from app.database import get_db
-    from app.models import ModelRecord
-    from app.main import app
-
-    db = next(app.dependency_overrides[get_db]())
-    try:
-        db.add(ModelRecord(
-            model_id="alpha/detail",
-            display_name="Detail Model",
-            provider="Alpha",
-            availability_status="available",
-            tasks=["chat"],
-            modalities=["text"],
-        ))
-        db.commit()
-    finally:
-        db.close()
+    insert_model(
+        model_id="alpha/detail",
+        display_name="Detail Model",
+        provider="Alpha",
+        availability_status="available",
+        tasks=["chat"],
+        modalities=["text"],
+    )
 
     response = client.get("/v1/models/alpha/detail")
     assert response.status_code == 200
     assert response.json()["display_name"] == "Detail Model"
+
+
+def test_registry_pagination_is_bounded(client):
+    response = client.get("/v1/models?limit=101")
+    assert response.status_code == 422
