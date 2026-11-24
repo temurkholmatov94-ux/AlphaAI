@@ -27,7 +27,7 @@ Founder direction: public platform, performance-first compute, and simultaneous 
 
 - Public landing page: `/`.
 - Interactive read-only model explorer: `/models`, backed by the approved public model registry API.
-- Initial administrator control center: `/admin`.
+- Initial administrator control center: `/admin`, including bounded, audit-logged Hugging Face discovery and human model review.
 - API documentation: `/docs`.
 - Preview-only Render Blueprint: `render.yaml`; deployment instructions and limitations: `docs/DEPLOYMENT.md`.
 - The repository does not yet have a live public deployment. The free preview Blueprint uses ephemeral SQLite and is not suitable for persistent user data or production. Public inference and production onboarding remain gated.
