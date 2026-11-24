@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import re
 from typing import Any
 
 from huggingface_hub import HfApi
@@ -10,6 +11,28 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models import ModelRecord
 
+
+_QUANTIZATION_SUFFIXES = {
+    "awq", "gptq", "gguf", "exl2", "4bit", "8bit", "int4", "int8",
+    "fp8", "fp16", "bf16", "w4a16", "w8a8",
+}
+
+def infer_model_identity(model_id: str) -> dict[str, str]:
+    """Generate grouping hints; never verify a publisher or merge records."""
+    clean_id = model_id.strip().strip("/")
+    namespace, _, repo_name = clean_id.partition("/")
+    name = repo_name or namespace
+    normalized = re.sub(r"[-_.]+", "-", name).strip("-")
+    parts = normalized.split("-") if normalized else []
+    variant_type = "base"
+    while parts and parts[-1].lower() in _QUANTIZATION_SUFFIXES:
+        parts.pop()
+        variant_type = "quantized"
+    canonical_name = "-".join(parts) if parts else normalized
+    lowered = normalized.lower()
+    if variant_type == "base" and any(x in lowered for x in ("finetune", "fine-tune", "lora", "adapter")):
+        variant_type = "fine_tune_or_adapter"
+    return {"publisher_namespace": namespace or "", "canonical_name": canonical_name[:255], "variant_type": variant_type}
 
 _WEIGHT_SUFFIXES = (
     ".safetensors", ".bin", ".gguf", ".pt", ".pth", ".onnx",
@@ -56,6 +79,7 @@ def map_huggingface_model(info: Any) -> dict:
     else:
         weights_status = "unknown"
 
+    identity = infer_model_identity(model_id)
     return {
         "model_id": model_id,
         "display_name": model_id.rsplit("/", 1)[-1],
@@ -71,6 +95,8 @@ def map_huggingface_model(info: Any) -> dict:
         "context_window": None,
         "weights_available": bool(has_weights and gated is False),
         "weights_status": weights_status,
+        **identity,
+        "identity_status": "unreviewed",
         "last_verified_at": None,
         "publisher": model_id.split("/", 1)[0] if "/" in model_id else None,
         "downloads": getattr(info, "downloads", None),
@@ -124,6 +150,7 @@ class HuggingFaceDiscovery:
                 "display_name", "source_url", "publisher", "downloads", "likes",
                 "gated", "library_name", "upstream_revision", "upstream_last_modified",
                 "tasks", "weights_available", "weights_status",
+                "publisher_namespace", "canonical_name", "variant_type",
             ):
                 setattr(existing, field, values[field])
             updated += 1
