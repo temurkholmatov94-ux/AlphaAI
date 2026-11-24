@@ -11,6 +11,24 @@ from app.config import get_settings
 from app.models import ModelRecord
 
 
+_WEIGHT_SUFFIXES = (
+    ".safetensors", ".bin", ".gguf", ".pt", ".pth", ".onnx",
+    ".h5", ".msgpack", ".tflite",
+)
+
+
+def _weight_files(info: Any) -> tuple[bool, bool]:
+    """Return (file listing was supplied, recognized weight file exists)."""
+    siblings = getattr(info, "siblings", None)
+    if siblings is None:
+        return False, False
+    for sibling in siblings:
+        filename = sibling if isinstance(sibling, str) else getattr(sibling, "rfilename", "")
+        if str(filename).lower().endswith(_WEIGHT_SUFFIXES):
+            return True, True
+    return True, False
+
+
 def map_huggingface_model(info: Any) -> dict:
     """Map upstream metadata to an unapproved AlphaAI registry record.
 
@@ -27,6 +45,16 @@ def map_huggingface_model(info: Any) -> dict:
     last_modified = getattr(info, "last_modified", None)
     gated_value = getattr(info, "gated", False)
     gated = bool(gated_value) if gated_value is not None else None
+    listing_supplied, has_weights = _weight_files(info)
+
+    if has_weights and gated is True:
+        weights_status = "gated"
+    elif has_weights and gated is False:
+        weights_status = "public"
+    elif listing_supplied:
+        weights_status = "not_listed"
+    else:
+        weights_status = "unknown"
 
     return {
         "model_id": model_id,
@@ -41,7 +69,8 @@ def map_huggingface_model(info: Any) -> dict:
         "tasks": [str(pipeline_tag).lower()] if pipeline_tag else [],
         "modalities": [],
         "context_window": None,
-        "weights_available": False,
+        "weights_available": bool(has_weights and gated is False),
+        "weights_status": weights_status,
         "last_verified_at": None,
         "publisher": model_id.split("/", 1)[0] if "/" in model_id else None,
         "downloads": getattr(info, "downloads", None),
@@ -67,6 +96,7 @@ class HuggingFaceDiscovery:
                 pipeline_tag=pipeline_tag,
                 sort="downloads",
                 limit=limit,
+                full=True,
                 cardData=True,
                 token=False if not get_settings().huggingface_token else get_settings().huggingface_token,
             )
@@ -93,7 +123,7 @@ class HuggingFaceDiscovery:
             for field in (
                 "display_name", "source_url", "publisher", "downloads", "likes",
                 "gated", "library_name", "upstream_revision", "upstream_last_modified",
-                "tasks",
+                "tasks", "weights_available", "weights_status",
             ):
                 setattr(existing, field, values[field])
             updated += 1
