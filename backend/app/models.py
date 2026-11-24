@@ -192,3 +192,21 @@ class ComputeWorker(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class WorkerBenchmark(Base):
+    __tablename__ = "worker_benchmarks"
+    __table_args__ = (Index("ix_worker_benchmarks_worker_created", "worker_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    worker_id: Mapped[int] = mapped_column(ForeignKey("compute_workers.id", ondelete="CASCADE"), nullable=False, index=True)
+    benchmark_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    benchmark_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    device_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    device_vram_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    matrix_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    repetitions: Mapped[int] = mapped_column(Integer, nullable=False)
+    average_latency_ms: Mapped[float] = mapped_column(nullable=False)
+    estimated_fp32_tflops: Mapped[float] = mapped_column(nullable=False)
+    measurement_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
