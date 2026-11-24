@@ -34,13 +34,9 @@ def admin_console() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "admin.html")
 
 
-@app.get("/", tags=["system"])
-async def root() -> dict[str, str]:
-    return {
-        "name": settings.app_name,
-        "status": "identity-foundation",
-        "docs": "/docs",
-    }
+@app.get("/", include_in_schema=False)
+def public_homepage() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 @app.get("/health", tags=["system"])
