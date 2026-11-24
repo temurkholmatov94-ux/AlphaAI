@@ -11,6 +11,10 @@ class Base(DeclarativeBase):
 
 
 def build_engine(database_url: str):
+    # Render and several managed Postgres services provide a generic postgresql:// URL.
+    # This project installs psycopg 3, so select its explicit SQLAlchemy dialect.
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
     return create_engine(database_url, pool_pre_ping=True, connect_args=connect_args)
 
