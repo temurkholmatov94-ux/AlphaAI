@@ -1,4 +1,4 @@
-def register_user(client, email="person@example.test"):
+def register_user(client, email="person@example.com"):
     response = client.post(
         "/v1/auth/register",
         json={"email": email, "password": "LongPassphrase123!secure"},
@@ -12,7 +12,7 @@ def verify_user(client, token):
     assert response.status_code == 200
 
 
-def session_token(client, email="person@example.test"):
+def session_token(client, email="person@example.com"):
     response = client.post(
         "/v1/auth/login",
         json={"email": email, "password": "LongPassphrase123!secure"},
@@ -26,7 +26,7 @@ def test_registration_and_verification_required(client):
     assert registered["verification_required"] is True
     blocked = client.post(
         "/v1/auth/login",
-        json={"email": "person@example.test", "password": "LongPassphrase123!secure"},
+        json={"email": "person@example.com", "password": "LongPassphrase123!secure"},
     )
     assert blocked.status_code == 403
     verify_user(client, registered["development_verification_token"])
@@ -77,11 +77,11 @@ def test_duplicate_email_and_weak_password_are_rejected(client):
     verify_user(client, registered["development_verification_token"])
     duplicate = client.post(
         "/v1/auth/register",
-        json={"email": "PERSON@example.test", "password": "LongPassphrase123!secure"},
+        json={"email": "PERSON@example.com", "password": "LongPassphrase123!secure"},
     )
     assert duplicate.status_code == 409
     weak = client.post(
         "/v1/auth/register",
-        json={"email": "weak@example.test", "password": "short"},
+        json={"email": "weak@example.com", "password": "short"},
     )
     assert weak.status_code == 422
