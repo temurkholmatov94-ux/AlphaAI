@@ -131,3 +131,13 @@ See docs/MASTER_ARCHITECTURE.md, docs/THREAT_MODEL.md, and docs/ROADMAP.md.
 Open `/admin` on the running API service. The responsive console signs in through the existing login endpoint, keeps the access token in page memory (not localStorage), loads the protected model review queue, displays upstream metadata, and submits explicit license/access/availability decisions. Review actions are written to the audit log. The UI does not infer legal permission from a model's popularity or metadata; administrators must verify evidence before publishing.
 
 The page is served from the same origin as the API, so it does not require a separate frontend deployment or permissive CORS configuration. It is an initial operations console, not the finished public product dashboard.
+
+## Provider configuration inventory (implemented; admin-only)
+
+- `GET /v1/admin/providers` reports whether the OpenAI, Anthropic and xAI adapter credentials are configured on the server.
+- Shows configured public alias routes without exposing upstream credentials.
+- Requires platform administrator authentication.
+- Explicitly reports live health as `not-run`; a configured API key does not prove that a provider is reachable, funded or healthy.
+- The admin console includes a provider configuration panel.
+
+Provider credentials remain in server environment variables or a secret manager. This inventory is not a credential editor and does not execute paid provider requests.
