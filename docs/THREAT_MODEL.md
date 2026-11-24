@@ -24,7 +24,7 @@
 - Authentication, verified account lifecycle, RBAC and organization isolation
 - Hashed API keys, scoped permissions, rotation and revocation
 - Server-side secret manager; no secrets in browser bundles or logs
-- Strict request size, context, output, time, concurrency and queue limits
+- Strict request size, context, output, time, concurrency and queue limits\n- Organization usage accounts with atomic preflight spend reservations and immutable usage events\n- Do not release a reservation merely because a network timeout occurred; reconcile ambiguous provider outcomes before releasing it
 - Per-tenant and global rate/spend quotas with atomic reservations
 - Fail-closed behavior if quota/budget state is unavailable
 - Private networking for model workers; TLS and edge protection at ingress
