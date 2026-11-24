@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from app.config import get_settings
 from app.routers.admin_models import router as admin_models_router
@@ -20,6 +23,11 @@ app.include_router(api_keys_router)
 app.include_router(organizations_router)
 app.include_router(models_router)
 app.include_router(admin_models_router)
+
+
+@app.get("/admin", include_in_schema=False)
+def admin_console() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "admin.html")
 
 
 @app.get("/", tags=["system"])
