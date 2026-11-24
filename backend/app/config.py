@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     xai_api_key: str | None = None
     xai_base_url: str = "https://api.x.ai/v1"
     alphaai_model_routes: list[str] = []
+    alphaai_admin_emails: list[str] = []
 
     model_config = SettingsConfigDict(
         env_file=".env",
