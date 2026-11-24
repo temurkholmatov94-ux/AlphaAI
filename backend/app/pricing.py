@@ -39,7 +39,7 @@ def estimate_max_cost_microusd(
         raise ValueError("Safety margin must be between 0 and 100 percent")
 
     now = datetime.now(timezone.utc)
-    prices = db.scalars(
+    price = db.scalar(
         select(ModelPricing)
         .where(
             ModelPricing.provider == provider,
@@ -47,27 +47,27 @@ def estimate_max_cost_microusd(
             ModelPricing.active.is_(True),
         )
         .order_by(ModelPricing.effective_from.desc(), ModelPricing.id.desc())
-    ).all()
+        .limit(1)
+    )
 
-    price = None
-    for candidate in prices:
-        verified_at = candidate.verified_at
-        effective_from = candidate.effective_from
-        effective_until = candidate.effective_until
+    if price is not None:
+        verified_at = price.verified_at
+        effective_from = price.effective_from
+        effective_until = price.effective_until
         if verified_at.tzinfo is None:
             verified_at = verified_at.replace(tzinfo=timezone.utc)
         if effective_from.tzinfo is None:
             effective_from = effective_from.replace(tzinfo=timezone.utc)
         if effective_until is not None and effective_until.tzinfo is None:
             effective_until = effective_until.replace(tzinfo=timezone.utc)
-        if (
+        is_current = (
             verified_at <= now
             and verified_at >= now - timedelta(days=30)
             and effective_from <= now
             and (effective_until is None or effective_until > now)
-        ):
-            price = candidate
-            break
+        )
+        if not is_current:
+            price = None
 
     if price is None:
         raise PricingUnavailable("No current verified price is configured for this model")
