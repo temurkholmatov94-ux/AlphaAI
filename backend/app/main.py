@@ -34,6 +34,11 @@ def admin_console() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "admin.html")
 
 
+@app.get("/models", include_in_schema=False)
+def model_explorer() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "models.html")
+
+
 @app.get("/", include_in_schema=False)
 def public_homepage() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "index.html")
