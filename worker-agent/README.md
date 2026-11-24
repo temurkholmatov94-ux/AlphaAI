@@ -46,3 +46,23 @@ python -m unittest -v
 ```
 
 The tests mock the NVIDIA utility and HTTP endpoint; they do not send network requests or require a GPU.
+
+## Optional local NVIDIA benchmark
+
+The opt-in `gpu_benchmark.py` script runs a bounded, single-GPU FP32 matrix multiplication benchmark. It is a basic hardware signal, not a model-serving performance score.
+
+Requirements: NVIDIA GPU, working NVIDIA driver and `nvidia-smi`, plus a CUDA-enabled PyTorch installation compatible with that driver. The script does not install dependencies or contact the AlphaAI server.
+
+Preview usage (no benchmark runs):
+
+```bash
+python gpu_benchmark.py --help
+```
+
+Explicitly run a bounded benchmark locally:
+
+```bash
+python gpu_benchmark.py --run --matrix-size 1024 --repetitions 20
+```
+
+The defaults are 1024×1024 FP32 matrices and 20 repetitions; allowed bounds are 256–2048 and 1–100 repetitions. Running this uses GPU resources and may increase power draw and temperature. Run only on a machine you own or are authorized to use, while monitoring its thermals. Results are printed locally as JSON and are not uploaded.
