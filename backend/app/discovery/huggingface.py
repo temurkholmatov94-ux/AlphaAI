@@ -116,7 +116,7 @@ class HuggingFaceDiscovery:
     def fetch(self, *, limit: int = 50, search: str | None = None, pipeline_tag: str | None = None):
         if not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
-        return list(
+        models = list(
             self.api.list_models(
                 search=search,
                 pipeline_tag=pipeline_tag,
@@ -127,6 +127,25 @@ class HuggingFaceDiscovery:
                 token=False if not get_settings().huggingface_token else get_settings().huggingface_token,
             )
         )
+        # The list endpoint may omit repository siblings even with full=True.
+        # Fetch authoritative file metadata for those records so weight availability
+        # is not incorrectly displayed as false/unknown. Fail closed if enrichment
+        # is unavailable: map_huggingface_model will retain an unknown status.
+        model_info = getattr(self.api, "model_info", None)
+        if callable(model_info):
+            token = False if not get_settings().huggingface_token else get_settings().huggingface_token
+            for index, model in enumerate(models):
+                if getattr(model, "siblings", None) is None:
+                    try:
+                        models[index] = model_info(
+                            repo_id=str(getattr(model, "id", "")),
+                            token=token,
+                        )
+                    except Exception:
+                        # Discovery should remain useful when one repository's
+                        # file listing is temporarily unavailable.
+                        continue
+        return models
 
     def ingest(self, db: Session, *, limit: int = 50, search: str | None = None,
                pipeline_tag: str | None = None) -> dict[str, int]:
