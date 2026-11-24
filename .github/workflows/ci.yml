@@ -35,6 +35,6 @@ jobs:
       - name: Validate worker agent syntax
         run: cd .. && python -m py_compile worker-agent/agent.py
       - name: Test worker agent
-        run: cd worker-agent && python -m unittest -v
+        run: cd ../worker-agent && python -m unittest -v
       - name: Build API container
         run: docker build -t alphaai-api .
