@@ -6,7 +6,7 @@ databases:
   - name: alphaai-db
     databaseName: alphaai
     user: alphaai
-    plan: 0.1c-256mb
+    plan: free
     region: frankfurt
     ipAllowList: []
     storageAutoscalingEnabled: false
