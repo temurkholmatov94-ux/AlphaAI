@@ -60,7 +60,12 @@ def estimate_max_cost_microusd(
             effective_from = effective_from.replace(tzinfo=timezone.utc)
         if effective_until is not None and effective_until.tzinfo is None:
             effective_until = effective_until.replace(tzinfo=timezone.utc)
-        if (\n            verified_at <= now\n            and verified_at >= now - timedelta(days=30)\n            and effective_from <= now\n            and (effective_until is None or effective_until > now)\n        ):
+        if (
+            verified_at <= now
+            and verified_at >= now - timedelta(days=30)
+            and effective_from <= now
+            and (effective_until is None or effective_until > now)
+        ):
             price = candidate
             break
 
