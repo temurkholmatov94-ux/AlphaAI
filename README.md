@@ -58,7 +58,7 @@ A catalog entry is not a promise that a model is downloadable, free, licensed fo
 
 Important: an email delivery provider, resend flow, login/registration rate limiting, MFA, session revocation, recovery flow and security review are not implemented yet. Do not open public account registration until email delivery and abuse controls are live.
 
-## Provider gateway foundation (implemented; inference endpoint intentionally not exposed)
+## Usage and budget foundation (implemented; budgets default to disabled)\n\n- Every new workspace receives a usage account with zero budget and spending disabled.\n- Atomic spend reservations are committed before provider calls.\n- Idempotency keys prevent duplicate reservations.\n- Settlements create immutable usage events and reconcile reserved versus actual spend.\n- Failed-before-send requests can release reservations; ambiguous timeouts must be reconciled, not blindly released.\n- An actual provider charge above its estimate is recorded as an overage and blocks later reservations until budget is adjusted.\n\nThe pricing estimator and operator-only budget configuration are not yet implemented, so the usage ledger is not yet connected to an inference endpoint.\n\n## Provider gateway foundation (implemented; inference endpoint intentionally not exposed)
 
 - Provider-neutral request/response and error contracts.
 - OpenAI Chat Completions-compatible adapter (supports provider-configured base URLs).
