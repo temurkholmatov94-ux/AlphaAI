@@ -128,7 +128,7 @@ def test_discovery_distinguishes_gated_missing_and_unknown_weights():
     assert map_huggingface_model(unknown)["weights_available"] is False
 
 
-def test_discovery_refreshes_weight_facts_without_changing_human_publication():
+def test_discovery_refreshes_weight_facts_without_changing_human_publication(client):
     info = SimpleNamespace(
         id="example-org/approved-model",
         card_data=SimpleNamespace(license="apache-2.0"),
