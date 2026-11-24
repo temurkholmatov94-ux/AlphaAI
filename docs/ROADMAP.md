@@ -43,6 +43,7 @@
 - [ ] Provenance and license review workflow
 - [ ] Search, filtering, aliases and model capability metadata
 - [ ] Connector health and last-verified timestamps
+- [x] First same-origin admin control center for model review queue and approvals
 - [ ] Admin-only model ingestion and review interface
 - [ ] Additional verified model source connectors
 
