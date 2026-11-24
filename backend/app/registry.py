@@ -1,9 +1,10 @@
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import ModelRecord
 
 PUBLIC_STATUSES = ("available",)
+PUBLIC_LICENSE_STATUSES = ("verified", "not_applicable")
 
 
 def list_public_models(
@@ -15,7 +16,11 @@ def list_public_models(
     limit: int = 25,
     offset: int = 0,
 ) -> tuple[list[ModelRecord], int]:
-    filters = [ModelRecord.availability_status.in_(PUBLIC_STATUSES)]
+    filters = [
+        ModelRecord.availability_status.in_(PUBLIC_STATUSES),
+        ModelRecord.license_status.in_(PUBLIC_LICENSE_STATUSES),
+        ModelRecord.access_method != "unknown",
+    ]
 
     if q:
         pattern = f"%{q.strip()}%"
@@ -29,7 +34,8 @@ def list_public_models(
     if provider:
         filters.append(ModelRecord.provider.ilike(provider.strip()))
     if task:
-        filters.append(ModelRecord.tasks.contains([task.strip().lower()]))
+        task_pattern = f'%"{task.strip().lower()}"%'
+        filters.append(func.lower(cast(ModelRecord.tasks, String)).like(task_pattern))
 
     total = db.scalar(select(func.count()).select_from(ModelRecord).where(*filters)) or 0
     statement = (
@@ -46,5 +52,7 @@ def get_public_model(db: Session, model_id: str) -> ModelRecord | None:
     statement = select(ModelRecord).where(
         ModelRecord.model_id == model_id,
         ModelRecord.availability_status.in_(PUBLIC_STATUSES),
+        ModelRecord.license_status.in_(PUBLIC_LICENSE_STATUSES),
+        ModelRecord.access_method != "unknown",
     )
     return db.scalar(statement)
